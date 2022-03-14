@@ -175,7 +175,7 @@ def get_price( _metric ):
     for option in _metric.columns:
         price = _metric[option]['regularMarketPrice']
         delta = _metric[option]['regularMarketChangePercent']*100
-        desc.append( f'[{option:4}] {price:.1f} ({delta:.1f}%)')
+        desc.append( f'[{option:4}] {price:7.1f} ({delta:+5.1f}%)')
 
     return desc
 
