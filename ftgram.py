@@ -26,7 +26,6 @@ from numpy import NaN
 # -------------------------------------------------------------------------------------------------
 
 _TELE_TOKEN      = '5294777877:AAHh-x5mD5Pi9fOOl48LLRteH-OHP0snS6Y'
-_TELE_CHAT_ID    = '5234829808'
 
 _DEFAULT_PORT    = [ 'MSFT', 'AAPL', 'SPLG', 'QQQ', 'JEPI', 'TSLA', 'DBC', 'IAU', 'NQ=F', 'ES=F', 'YM=F' ]
 _RSI_THRESHOLD_L = 35
@@ -70,7 +69,7 @@ def get_source( _port ):
     info[ 'price'   ] = tick.price
     info[ 'summary' ] = tick.summary_detail
     info[ 'fund'    ] = tick.fund_holding_info
-    info[ 'history' ] = tick.history( period='1mo', interval='1d' )
+    info[ 'history' ] = tick.history( period='1y', interval='1d' )
 
     return info
 
@@ -198,12 +197,19 @@ def get_rsi( _metric ):
 def help(update: Update, context: CallbackContext) -> None:
     """Sends explanation on how to use the bot."""
     text  = '/help to show usage\n'
+    text += '/ticker to show tickers\n'
     text += '/start <seconds> to start detector\n'
     text += '/stop to stop detector\n'
     text += '/price to show latest price\n'
     text += '/rsi to show latest rsi\n'
     text += '/detect to run detector'
     update.message.reply_text( text )
+
+def ticker(update: Update, context: CallbackContext) -> None:
+    """Show tickers"""
+    desc   = params['port']
+    text = '<code>'+' '.join( desc )+'</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )  
 
 def detector(context: CallbackContext) -> None:
     """Run detector."""
@@ -306,6 +312,7 @@ def main():
 
     # on different commands - answer in Telegram
     dispatcher.add_handler( CommandHandler("help",   help   ) )
+    dispatcher.add_handler( CommandHandler("ticker", ticker ) )
     dispatcher.add_handler( CommandHandler("start",  start  ) )
     dispatcher.add_handler( CommandHandler("stop",   stop   ) )
     dispatcher.add_handler( CommandHandler("price",  price  ) )
