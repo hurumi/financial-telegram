@@ -202,6 +202,7 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '/stop to stop detector\n'
     text += '/price to show latest price\n'
     text += '/rsi to show latest rsi\n'
+    text += '/detect to run detector'
     update.message.reply_text( text )
 
 def detector(context: CallbackContext) -> None:
@@ -280,7 +281,15 @@ def rsi(update: Update, context: CallbackContext) -> None:
     metric = get_metric( info )    
     desc   = get_rsi   ( metric )
     text = '<code>'+'\n'.join( desc )+'</code>'
-    update.message.reply_text( text, parse_mode = "HTML" )    
+    update.message.reply_text( text, parse_mode = "HTML" )
+
+def detect(update: Update, context: CallbackContext) -> None:
+    """Run detector"""
+    info   = get_source( params['port'] )
+    metric = get_metric( info )    
+    desc   = get_detection( metric )
+    text = '<code>'+'\n'.join( desc )+'</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )       
 
 # -------------------------------------------------------------------------------------------------
 # Main
@@ -296,11 +305,12 @@ def main():
     dispatcher = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dispatcher.add_handler( CommandHandler("help",  help  ) )
-    dispatcher.add_handler( CommandHandler("start", start ) )
-    dispatcher.add_handler( CommandHandler("stop",  stop  ) )
-    dispatcher.add_handler( CommandHandler("price", price ) )
-    dispatcher.add_handler( CommandHandler("rsi",   rsi   ) )
+    dispatcher.add_handler( CommandHandler("help",   help   ) )
+    dispatcher.add_handler( CommandHandler("start",  start  ) )
+    dispatcher.add_handler( CommandHandler("stop",   stop   ) )
+    dispatcher.add_handler( CommandHandler("price",  price  ) )
+    dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
+    dispatcher.add_handler( CommandHandler("detect", detect ) )
 
     # Start the Bot
     updater.start_polling()
