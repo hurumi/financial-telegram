@@ -151,7 +151,7 @@ def get_detection( _metric ):
 
             # check
             if _metric[option][col]*mul > thr*mul:
-                name  = attr_list[col]
+                name  = attr_list[col] if col in attr_list else col
                 value = _metric[option][col]*pct
                 thres = thr*pct
                 if mul < 0:
