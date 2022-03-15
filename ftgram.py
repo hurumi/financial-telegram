@@ -379,7 +379,7 @@ def main():
 
     # load token
     try:
-        token = open( _TOKEN_PATH, 'r' ).readline()
+        token = open( _TOKEN_PATH, 'r' ).readline().rstrip()
     except:
         print( 'Make token.txt which includes your token value' )
         exit()
