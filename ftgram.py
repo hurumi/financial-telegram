@@ -54,7 +54,20 @@ filter_dict = {
     'RSIUp'        : [ 'RSI',                        'RSI_H',  1,   1 ],
     'RSIDn'        : [ 'RSI',                        'RSI_L', -1,   1 ],
 }
-
+sector_tickers = {
+    'XLK': 'Techno',
+    'XLC': 'Commun',
+    'XLY': 'Cyclic',
+    'XLF': 'Financ',
+    'XLV': 'Health',
+    'XLP': 'Defens',
+    'XLI': 'Indust',
+    'XLRE':'RealEs',
+    'XLE': 'Energy', 
+    'XLU': 'Utilit', 
+    'XLB': 'Materi',
+    'SPY': 'S&P500',
+}
 prev_desc = []
 
 # -------------------------------------------------------------------------------------------------
@@ -149,24 +162,46 @@ def check_diff( _prev, _new ):
 
 def get_price( _metric ):
 
-    desc = []
+    temp = []
 
     # for each ticker
     for option in _metric.columns:
         price = _metric[option]['regularMarketPrice']
         delta = _metric[option]['regularMarketChangePercent']*100
-        desc.append( f'[{option:4}] {price:7.1f} ({delta:+5.1f}%)')
+        temp.append( [ delta, option, price ] )
+    
+    temp.sort( reverse=True )
+    desc = [ f'[{option:4}] {price:7.1f} ({delta:+5.1f}%)' for delta, option, price in temp ]
+
+    return desc
+
+def get_sector( _metric ):
+
+    temp = []
+
+    # for each ticker
+    for option in _metric.columns:
+        price = _metric[option]['regularMarketPrice']
+        delta = _metric[option]['regularMarketChangePercent']*100
+        name  = sector_tickers[ option ]
+        temp.append( [ delta, name, price ] )
+
+    temp.sort( reverse=True )
+    desc = [ f'[{name:6}] {price:7.1f} ({delta:+5.1f}%)' for delta, name, price in temp ]
 
     return desc
 
 def get_rsi( _metric ):
 
-    desc = []
+    temp = []
 
     # for each ticker
     for option in _metric.columns:
         rsi = _metric[option]['RSI']
-        desc.append( f'[{option:4}] {rsi:.1f}')
+        temp.append( [ rsi, option ] )
+    
+    temp.sort( reverse=True )
+    desc = [ f'[{option:4}] {rsi:.1f}' for rsi, option in temp ]
 
     return desc
 
@@ -223,6 +258,7 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '/thres to show thresholds\n'
     text += '/set <rsi | day> <L> <H> to set thres.\n'
     text += '/stat <price | rsi> to show stat\n'
+    text += '/sector to show sector stat\n'
     text += '/fear to show fear and greed chart'
     update.message.reply_text( text )
 
@@ -325,7 +361,7 @@ def stat(update: Update, context: CallbackContext) -> None:
     else:
         desc = get_rsi  ( metric )
 
-    text = '<code style="color:red">'+'\n'.join( desc )+'</code>'
+    text = '<code>'+'\n'.join( desc )+'</code>'
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def filter(update: Update, context: CallbackContext) -> None:
@@ -369,6 +405,14 @@ def fear(update: Update, context: CallbackContext) -> None:
     update.message.reply_photo( needle_url   )
     update.message.reply_photo( overtime_url )
 
+def sector(update: Update, context: CallbackContext) -> None:
+    """Show sector price"""
+    info   = get_source( sector_tickers )
+    metric = get_metric( info )
+    desc   = get_sector( metric )
+    text   = '<code>'+'\n'.join( desc )+'</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )
+
 # -------------------------------------------------------------------------------------------------
 # Main
 # -------------------------------------------------------------------------------------------------
@@ -406,6 +450,7 @@ def main():
     dispatcher.add_handler( CommandHandler("thres",  thres  ) )
     dispatcher.add_handler( CommandHandler("set",    setthr ) )
     dispatcher.add_handler( CommandHandler("stat",   stat   ) )
+    dispatcher.add_handler( CommandHandler("sector", sector ) )
     dispatcher.add_handler( CommandHandler("fear",   fear   ) )
 
     # Start the Bot
