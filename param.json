@@ -1,0 +1,19 @@
+{
+    "port": [
+        "MSFT",
+        "AAPL",
+        "SPLG",
+        "QQQ",
+        "JEPI",
+        "TSLA",
+        "DBC",
+        "IAU",
+        "NQ=F",
+        "ES=F",
+        "YM=F"
+    ],
+    "RSI_L": 35.0,
+    "RSI_H": 65.0,
+    "DAY_L": -0.02,
+    "DAY_H": 0.02
+}

@@ -11,21 +11,24 @@ urllib3.disable_warnings( urllib3.exceptions.InsecureRequestWarning )
 # -------------------------------------------------------------------------------------------------
 
 import talib as ta
-import argparse
-import time
 import pandas as pd
+import os
+import json
+import requests
 
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 from yahooquery import Ticker
 from numpy import NaN
+from bs4 import BeautifulSoup
 
 # -------------------------------------------------------------------------------------------------
 # Globals
 # -------------------------------------------------------------------------------------------------
 
-_TELE_TOKEN      = '5294777877:AAHh-x5mD5Pi9fOOl48LLRteH-OHP0snS6Y'
+_TOKEN_PATH      = './token.txt'
+_PARAM_FILE      = './param.json'
 
 _DEFAULT_PORT    = [ 'MSFT', 'AAPL', 'SPLG', 'QQQ', 'JEPI', 'TSLA', 'DBC', 'IAU', 'NQ=F', 'ES=F', 'YM=F' ]
 _RSI_THRESHOLD_L = 35
@@ -36,9 +39,6 @@ _DAY_THRESHOLD_H = 0.02
 attr_list = { 
     'regularMarketChangePercent':'DAY', 
     'regularMarketPrice':'PRICE',
-    'trailingPE':'P/E',
-    'fiftyTwoWeekHigh':'52H',
-    'fiftyTwoWeekLow':'52L',
 }
 params = {
     'port'   : _DEFAULT_PORT,
@@ -49,10 +49,10 @@ params = {
 }
 # filtername: [ measure, threshold, pos/neg factor, percentage factor ]
 filter_dict = {
-    'DailyChangeUp': [ 'regularMarketChangePercent', params['DAY_H'],  1, 100 ],
-    'DailyChangeDn': [ 'regularMarketChangePercent', params['DAY_L'], -1, 100 ],
-    'RSIUp'        : [ 'RSI',                        params['RSI_H'],  1,   1 ],
-    'RSIDn'        : [ 'RSI',                        params['RSI_L'], -1,   1 ],
+    'DailyChangeUp': [ 'regularMarketChangePercent', 'DAY_H',  1, 100 ],
+    'DailyChangeDn': [ 'regularMarketChangePercent', 'DAY_L', -1, 100 ],
+    'RSIUp'        : [ 'RSI',                        'RSI_H',  1,   1 ],
+    'RSIDn'        : [ 'RSI',                        'RSI_L', -1,   1 ],
 }
 
 prev_desc = []
@@ -61,14 +61,28 @@ prev_desc = []
 # Functions
 # -------------------------------------------------------------------------------------------------
 
+def save_params( _params ):
+
+    # save to file
+    with open( _PARAM_FILE, 'w' ) as fp:
+        json.dump( _params, fp, indent=4 )
+
+    return
+
+def load_params():
+
+    # load from file
+    with open( _PARAM_FILE, 'r' ) as fp:
+        ret = json.load( fp )
+
+    return ret
+
 def get_source( _port ):
 
     tick = Ticker( _port, verify=False )
 
     info = {}
     info[ 'price'   ] = tick.price
-    info[ 'summary' ] = tick.summary_detail
-    info[ 'fund'    ] = tick.fund_holding_info
     info[ 'history' ] = tick.history( period='1y', interval='1d' )
 
     return info
@@ -76,18 +90,10 @@ def get_source( _port ):
 def get_metric( _info ):
 
     # from Ticker.price
-    df1 = pd.DataFrame( _info['price'] )
-    rm_index = [ x for x in df1.index if x not in attr_list ]
-    df1.drop( rm_index, inplace=True )
+    df = pd.DataFrame( _info['price'] )
+    rm_index = [ x for x in df.index if x not in attr_list ]
+    df.drop( rm_index, inplace=True )
 
-    # from Ticker.summary_detail
-    df2 = pd.DataFrame( _info['summary'] )
-    rm_index = [ x for x in df2.index if x not in attr_list ]
-    df2.drop( rm_index, inplace=True )
-
-    # concat
-    df = pd.concat( [ df1, df2 ] )
-    
     # compute RSI & CCI
     rsi_list = {}
     cci_list = {}
@@ -101,39 +107,13 @@ def get_metric( _info ):
         cci = ta.CCI( _info['history']['high'][ key ], _info['history']['low'][ key ], _info['history']['close'][ key ] )[-1] 
         cci_list[ key ] = cci
 
-    # compute 52W_H & 52W_L
-    for key in df.columns:
-        # 52W_L
-        try:
-            new_entry  = df.loc[ 'regularMarketPrice'][ key ] - df.loc[ 'fiftyTwoWeekLow' ][ key ]
-            new_entry /= df.loc[ 'fiftyTwoWeekLow' ][ key ]
-            df.loc[ 'fiftyTwoWeekLow' ][ key ] = new_entry
-        except:
-            df.loc[ 'fiftyTwoWeekLow' ][ key ] = NaN
-        
-        # 52W_H
-        try:
-            new_entry  = df.loc[ 'regularMarketPrice'][ key ] - df.loc[ 'fiftyTwoWeekHigh' ][ key ]
-            new_entry /= df.loc[ 'fiftyTwoWeekHigh' ][ key ]
-            df.loc[ 'fiftyTwoWeekHigh' ][ key ] = new_entry
-        except:
-            df.loc[ 'fiftyTwoWeekHigh' ][ key ] = NaN
-
-    # replace ETF P/E
-    for key in df.columns:
-        if _info[ 'price' ][ key ][ 'quoteType' ] != 'ETF': continue
-        try:
-            df.loc[ 'trailingPE' ][ key ] = _info[ 'fund' ][ key ][ 'equityHoldings' ][ 'priceToEarnings' ]
-        except:
-            df.loc[ 'trailingPE' ][ key ] = NaN
-
     # add rows
     df.loc[ 'RSI' ] = rsi_list
     df.loc[ 'CCI' ] = cci_list
 
     return df
 
-def get_detection( _metric ):
+def apply_filter( _metric ):
 
     desc = []
 
@@ -144,10 +124,10 @@ def get_detection( _metric ):
         for elem in filter_dict.keys():
 
             # get filter method
-            col = filter_dict[elem][0]  # measure
-            thr = filter_dict[elem][1]  # threshold
-            mul = filter_dict[elem][2]  # positive or negative
-            pct = filter_dict[elem][3]  # percentage conversion
+            col = filter_dict[elem][0]              # measure
+            thr = params[ filter_dict[elem][1] ]    # threshold
+            mul = filter_dict[elem][2]              # positive or negative
+            pct = filter_dict[elem][3]              # percentage conversion
 
             # check
             if _metric[option][col]*mul > thr*mul:
@@ -190,29 +170,93 @@ def get_rsi( _metric ):
 
     return desc
 
+def get_fear_grid_info():
+
+    # local functions
+    def clean_image_url( _url ):
+        idx1 = _url.find ( "'" )
+        idx2 = _url.rfind( "'" )
+        return _url[idx1+1:idx2]
+
+    def sep_fear_index( _str ):
+        _temp1 = _str.split( ':' )
+        _temp2 = _temp1[1].split( '(' )
+        _temp  = [ _temp1[0], int(_temp2[0]), _temp2[1][:-1] ]
+        return _temp
+
+    # CNN money
+    url = 'https://money.cnn.com/data/fear-and-greed/'
+
+    # get data
+    response = requests.get( url, verify=False )
+    html     = response.text
+    soup     = BeautifulSoup( html, 'html.parser' )
+
+    # needle chart
+    needle      = soup.select_one( '#needleChart' )
+    needle_url  = clean_image_url( needle['style'] )
+    needle_list = needle.select( 'li' )
+    fear_list   = []
+    for elem in needle_list:
+        entry = sep_fear_index( elem.get_text() )
+        fear_list.append( entry )
+
+    # over time
+    overtime = soup.select_one( '#feargreedOverTime' )
+    overtime_url = clean_image_url( overtime['style'] )
+
+    return needle_url, fear_list, overtime_url
+
 # -------------------------------------------------------------------------------------------------
 # Callbacks
 # -------------------------------------------------------------------------------------------------
 
 def help(update: Update, context: CallbackContext) -> None:
     """Sends explanation on how to use the bot."""
-    text  = '/help to show usage\n'
+    text  = '/help to show usages\n'
     text += '/ticker to show tickers\n'
-    text += '/start <seconds> to start detector\n'
-    text += '/stop to stop detector\n'
-    text += '/price to show latest price\n'
-    text += '/rsi to show latest rsi\n'
-    text += '/detect to run detector'
+    text += '/add <tickers> to add tickers\n'
+    text += '/del <tickers> to del tickers\n'
+    text += '/start <seconds> to run periodic filter\n'
+    text += '/stop to stop periodic filter\n'
+    text += '/filter to run filter once\n'
+    text += '/thres to show thresholds\n'
+    text += '/set <rsi | day> <L> <H> to set thres.\n'
+    text += '/stat <price | rsi> to show stat\n'
+    text += '/fear to show fear and greed chart'
     update.message.reply_text( text )
 
 def ticker(update: Update, context: CallbackContext) -> None:
     """Show tickers"""
     desc   = params['port']
     text = '<code>'+' '.join( desc )+'</code>'
-    update.message.reply_text( text, parse_mode = "HTML" )  
+    update.message.reply_text( text, parse_mode = "HTML" )
 
-def detector(context: CallbackContext) -> None:
-    """Run detector."""
+def add(update: Update, context: CallbackContext) -> None:
+    """Add tickers"""
+    for elem in context.args:
+        if elem not in params['port']:
+            p = Ticker( elem, verify=False, validate=True ).price
+            if p != {}: params['port'].append( elem.upper() )
+    save_params( params )
+    ticker( update, context )
+
+def delete(update: Update, context: CallbackContext) -> None:
+    """Del tickers"""
+
+    for elem in context.args:
+        params['port'].remove( elem.upper() )
+
+    # at least one ticker should exist
+    if len( params['port'] ) == 0:
+        update.message.reply_text( 'At least one ticker should exist, SPY is added by default' )
+        params['port'].append( 'SPY' )
+
+    save_params( params )
+    ticker( update, context )
+
+def periodic_filter(context: CallbackContext) -> None:
+    """Run filter."""
     global prev_desc
 
     job = context.job
@@ -223,10 +267,8 @@ def detector(context: CallbackContext) -> None:
     # get metric
     metric = get_metric( info )
 
-    # get detection
-    desc = get_detection( metric )
-
-    print( prev_desc, desc )
+    # apply filter
+    desc = apply_filter( metric )
 
     # output when only entry changes
     if check_diff( prev_desc, desc ):
@@ -256,7 +298,7 @@ def start(update: Update, context: CallbackContext) -> None:
             return
 
         job_removed = remove_job_if_exists(str(chat_id), context)
-        context.job_queue.run_repeating( detector, due, context=chat_id, name=str(chat_id) )
+        context.job_queue.run_repeating( periodic_filter, due, context=chat_id, name=str(chat_id) )
 
         text = 'Timer successfully set!'
         if job_removed:
@@ -273,29 +315,59 @@ def stop(update: Update, context: CallbackContext) -> None:
     text = 'Timer successfully cancelled!' if job_removed else 'You have no active timer.'
     update.message.reply_text(text)
 
-def price(update: Update, context: CallbackContext) -> None:
+def stat(update: Update, context: CallbackContext) -> None:
     """Show latest price"""
     info   = get_source( params['port'] )
-    metric = get_metric( info )    
-    desc   = get_price ( metric )
-    text = '<code>'+'\n'.join( desc )+'</code>'
+    metric = get_metric( info )
+
+    if context.args[0] == 'price':
+        desc = get_price( metric )
+    else:
+        desc = get_rsi  ( metric )
+
+    text = '<code style="color:red">'+'\n'.join( desc )+'</code>'
     update.message.reply_text( text, parse_mode = "HTML" )
 
-def rsi(update: Update, context: CallbackContext) -> None:
-    """Show latest RSI"""
-    info   = get_source( params['port'] )
-    metric = get_metric( info )    
-    desc   = get_rsi   ( metric )
-    text = '<code>'+'\n'.join( desc )+'</code>'
-    update.message.reply_text( text, parse_mode = "HTML" )
-
-def detect(update: Update, context: CallbackContext) -> None:
+def filter(update: Update, context: CallbackContext) -> None:
     """Run detector"""
-    info   = get_source( params['port'] )
-    metric = get_metric( info )    
-    desc   = get_detection( metric )
+    info   = get_source  ( params['port'] )
+    metric = get_metric  ( info )    
+    desc   = apply_filter( metric )
     text = '<code>'+'\n'.join( desc )+'</code>'
-    update.message.reply_text( text, parse_mode = "HTML" )       
+    update.message.reply_text( text, parse_mode = "HTML" )
+
+def thres(update: Update, context: CallbackContext) -> None:
+    """Show thresholds."""
+    r1 = params['RSI_L'];     r2 = params['RSI_H'];     text  = f'RSI {r1:5.1f} {r2:5.1f}\n'
+    r1 = params['DAY_L']*100; r2 = params['DAY_H']*100; text += f'DAY {r1:5.1f} {r2:5.1f}\n'
+    update.message.reply_text( '<code>'+text+'</code>', parse_mode = "HTML" )
+
+def setthr(update: Update, context: CallbackContext) -> None:
+    """Set thresholds."""
+    if context.args[0].upper() == 'RSI':
+        try:
+            params['RSI_L'] = float( context.args[1] )
+            params['RSI_H'] = float( context.args[2] )
+        except:
+            pass
+    if context.args[0].upper() == 'DAY':
+        try:
+            params['DAY_L'] = float( context.args[1] )/100
+            params['DAY_H'] = float( context.args[2] )/100
+        except:
+            pass
+
+    # save parameter
+    save_params( params )    
+
+    # show current threshold
+    thres( update, context )
+
+def fear(update: Update, context: CallbackContext) -> None:
+    """Show fear and greed chart."""
+    needle_url, fear_list, overtime_url = get_fear_grid_info()
+    update.message.reply_photo( needle_url   )
+    update.message.reply_photo( overtime_url )
 
 # -------------------------------------------------------------------------------------------------
 # Main
@@ -303,9 +375,22 @@ def detect(update: Update, context: CallbackContext) -> None:
 
 def main():
 
+    global params
+
+    # load token
+    try:
+        token = open( _TOKEN_PATH, 'r' ).readline()
+    except:
+        print( 'Make token.txt which includes your token value' )
+        exit()
+
+    # check if param file exists
+    if os.path.isfile( _PARAM_FILE ): params=load_params()
+    else: save_params( params )
+
     """Run bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater( _TELE_TOKEN )
+    updater = Updater( token )
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
@@ -313,11 +398,15 @@ def main():
     # on different commands - answer in Telegram
     dispatcher.add_handler( CommandHandler("help",   help   ) )
     dispatcher.add_handler( CommandHandler("ticker", ticker ) )
+    dispatcher.add_handler( CommandHandler("add",    add    ) )
+    dispatcher.add_handler( CommandHandler("del",    delete ) )
     dispatcher.add_handler( CommandHandler("start",  start  ) )
     dispatcher.add_handler( CommandHandler("stop",   stop   ) )
-    dispatcher.add_handler( CommandHandler("price",  price  ) )
-    dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
-    dispatcher.add_handler( CommandHandler("detect", detect ) )
+    dispatcher.add_handler( CommandHandler("filter", filter ) )
+    dispatcher.add_handler( CommandHandler("thres",  thres  ) )
+    dispatcher.add_handler( CommandHandler("set",    setthr ) )
+    dispatcher.add_handler( CommandHandler("stat",   stat   ) )
+    dispatcher.add_handler( CommandHandler("fear",   fear   ) )
 
     # Start the Bot
     updater.start_polling()
