@@ -156,9 +156,9 @@ def apply_filter( _metric ):
                 value = _metric[option][col]*pct
                 thres = thr*pct
                 if mul < 0:
-                    desc.append( f'[{option:5}]&#8595; {name}({value:.1f})&lt;{thres:.1f}')
+                    desc.append( f'<code>[{option:5}]&#8595; {name}({value:.1f})&lt;{thres:.1f}</code>')
                 else:
-                    desc.append( f'[{option:5}]&#8593; {name}({value:.1f})&gt;{thres:.1f}')
+                    desc.append( f'<code>[{option:5}]&#8593; {name}({value:.1f})&gt;{thres:.1f}</code>')
 
     return desc
 
@@ -179,7 +179,7 @@ def get_price( _metric ):
         temp.append( [ delta, option, price ] )
     
     temp.sort( reverse=True )
-    desc = [ f'[{option:5}] {price:7.1f} ({delta:+5.1f}%)' for delta, option, price in temp ]
+    desc = [ f'<code>[{option:5}] {price:7.1f} ({delta:+5.1f}%)</code>' for delta, option, price in temp ]
 
     return desc
 
@@ -195,7 +195,7 @@ def get_index( _metric ):
         temp.append( [ delta, name, price ] )
 
     # temp.sort( reverse=True )
-    desc = [ f'[{name:6}] {price:7.1f} ({delta:+5.1f}%)' for delta, name, price in temp ]
+    desc = [ f'<code>[{name:6}] {price:7.1f} ({delta:+5.1f}%)</code>' for delta, name, price in temp ]
 
     return desc
 
@@ -211,7 +211,7 @@ def get_sector( _metric ):
         temp.append( [ delta, name, price ] )
 
     temp.sort( reverse=True )
-    desc = [ f'[{name:6}] {price:7.1f} ({delta:+5.1f}%)' for delta, name, price in temp ]
+    desc = [ f'<code>[{name:6}] {price:7.1f} ({delta:+5.1f}%)</code>' for delta, name, price in temp ]
 
     return desc
 
@@ -225,7 +225,7 @@ def get_rsi( _metric ):
         temp.append( [ rsi, option ] )
     
     temp.sort( reverse=True )
-    desc = [ f'[{option:5}] {rsi:.1f}' for rsi, option in temp ]
+    desc = [ f'<code>[{option:5}] {rsi:.1f}</code>' for rsi, option in temp ]
 
     return desc
 
@@ -333,7 +333,7 @@ def periodic_filter(context: CallbackContext) -> None:
 
     # output when only entry changes
     if check_diff( prev_desc, desc ):
-        text = '<code>'+'\n'.join( desc )+'</code>'
+        text = '\n'.join( desc )
         context.bot.send_message( job.context, text, parse_mode = "HTML" )
 
     # update detection
@@ -381,7 +381,7 @@ def price(update: Update, context: CallbackContext) -> None:
     info   = get_source( params['port'] )
     metric = get_metric( info )
     desc   = get_price( metric )
-    text   = '<code>'+'\n'.join( desc )+'</code>'
+    text   = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def rsi(update: Update, context: CallbackContext) -> None:
@@ -389,7 +389,7 @@ def rsi(update: Update, context: CallbackContext) -> None:
     info   = get_source( params['port'] )
     metric = get_metric( info )
     desc   = get_rsi  ( metric )
-    text   = '<code>'+'\n'.join( desc )+'</code>'
+    text   = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )       
 
 def filter(update: Update, context: CallbackContext) -> None:
@@ -397,14 +397,14 @@ def filter(update: Update, context: CallbackContext) -> None:
     info   = get_source  ( params['port'] )
     metric = get_metric  ( info )    
     desc   = apply_filter( metric )
-    text = '<code>'+'\n'.join( desc )+'</code>'
+    text = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def thres(update: Update, context: CallbackContext) -> None:
     """Show thresholds."""
-    r1 = params['RSI_L'];     r2 = params['RSI_H'];     text  = f'RSI {r1:5.1f} {r2:5.1f}\n'
-    r1 = params['DAY_L']*100; r2 = params['DAY_H']*100; text += f'DAY {r1:5.1f} {r2:5.1f}\n'
-    update.message.reply_text( '<code>'+text+'</code>', parse_mode = "HTML" )
+    r1 = params['RSI_L'];     r2 = params['RSI_H'];     text  = f'<code>RSI {r1:5.1f} {r2:5.1f}</code>\n'
+    r1 = params['DAY_L']*100; r2 = params['DAY_H']*100; text += f'<code>DAY {r1:5.1f} {r2:5.1f}</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )
 
 def setthr(update: Update, context: CallbackContext) -> None:
     """Set thresholds."""
@@ -441,7 +441,7 @@ def index(update: Update, context: CallbackContext) -> None:
     info   = get_source( index_tickers )
     metric = get_metric( info )
     desc   = get_index ( metric )
-    text   = '<code>'+'\n'.join( desc )+'</code>'
+    text   = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def sector(update: Update, context: CallbackContext) -> None:
@@ -449,7 +449,7 @@ def sector(update: Update, context: CallbackContext) -> None:
     info   = get_source( sector_tickers )
     metric = get_metric( info )
     desc   = get_sector( metric )
-    text   = '<code>'+'\n'.join( desc )+'</code>'
+    text   = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 # -------------------------------------------------------------------------------------------------
