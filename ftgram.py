@@ -30,7 +30,7 @@ from bs4 import BeautifulSoup
 _TOKEN_PATH      = './token.txt'
 _PARAM_FILE      = './param.json'
 
-_DEFAULT_PORT    = [ 'MSFT', 'AAPL', 'SPLG', 'QQQ', 'JEPI', 'TSLA', 'DBC', 'IAU', 'NQ=F', 'ES=F', 'YM=F' ]
+_DEFAULT_PORT    = [ 'SPY', 'QQQ' ]
 _RSI_THRESHOLD_L = 35
 _RSI_THRESHOLD_H = 65
 _DAY_THRESHOLD_L = -0.02
@@ -67,6 +67,14 @@ sector_tickers = {
     'XLU': 'Utilit', 
     'XLB': 'Materi',
     'SPY': 'S&P500',
+}
+index_tickers = {
+    '^IXIC': 'Nasdaq', 
+    '^GSPC': 'S&P500', 
+    '^DJI':  'DowJon',
+    'NQ=F':  'Nas(F)',
+    'ES=F':  'S&P(F)',
+    'YM=F':  'DOW(F)',
 }
 prev_desc = []
 
@@ -148,9 +156,9 @@ def apply_filter( _metric ):
                 value = _metric[option][col]*pct
                 thres = thr*pct
                 if mul < 0:
-                    desc.append( f'[{option:4}]&#8595; {name}({value:.1f})&lt;{thres:.1f}')
+                    desc.append( f'[{option:5}]&#8595; {name}({value:.1f})&lt;{thres:.1f}')
                 else:
-                    desc.append( f'[{option:4}]&#8593; {name}({value:.1f})&gt;{thres:.1f}')
+                    desc.append( f'[{option:5}]&#8593; {name}({value:.1f})&gt;{thres:.1f}')
 
     return desc
 
@@ -171,7 +179,23 @@ def get_price( _metric ):
         temp.append( [ delta, option, price ] )
     
     temp.sort( reverse=True )
-    desc = [ f'[{option:4}] {price:7.1f} ({delta:+5.1f}%)' for delta, option, price in temp ]
+    desc = [ f'[{option:5}] {price:7.1f} ({delta:+5.1f}%)' for delta, option, price in temp ]
+
+    return desc
+
+def get_index( _metric ):
+
+    temp = []
+
+    # for each ticker
+    for option in _metric.columns:
+        price = _metric[option]['regularMarketPrice']
+        delta = _metric[option]['regularMarketChangePercent']*100
+        name  = index_tickers[ option ]
+        temp.append( [ delta, name, price ] )
+
+    # temp.sort( reverse=True )
+    desc = [ f'[{name:6}] {price:7.1f} ({delta:+5.1f}%)' for delta, name, price in temp ]
 
     return desc
 
@@ -201,7 +225,7 @@ def get_rsi( _metric ):
         temp.append( [ rsi, option ] )
     
     temp.sort( reverse=True )
-    desc = [ f'[{option:4}] {rsi:.1f}' for rsi, option in temp ]
+    desc = [ f'[{option:5}] {rsi:.1f}' for rsi, option in temp ]
 
     return desc
 
@@ -257,7 +281,9 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '/filter to run filter once\n'
     text += '/thres to show thresholds\n'
     text += '/set <rsi | day> <L> <H> to set thres.\n'
-    text += '/stat <price | rsi> to show stat\n'
+    text += '/price to show latest price\n'
+    text += '/rsi to show latest rsi\n'
+    text += '/index to show index stat\n'
     text += '/sector to show sector stat\n'
     text += '/fear to show fear and greed chart'
     update.message.reply_text( text )
@@ -279,7 +305,6 @@ def add(update: Update, context: CallbackContext) -> None:
 
 def delete(update: Update, context: CallbackContext) -> None:
     """Del tickers"""
-
     for elem in context.args:
         params['port'].remove( elem.upper() )
 
@@ -342,7 +367,7 @@ def start(update: Update, context: CallbackContext) -> None:
         update.message.reply_text(text)
 
     except (IndexError, ValueError):
-        update.message.reply_text('Usage: /set <seconds>')
+        update.message.reply_text('Usage: /start <seconds>')
 
 def stop(update: Update, context: CallbackContext) -> None:
     """Remove the job if the user changed their mind."""
@@ -351,18 +376,21 @@ def stop(update: Update, context: CallbackContext) -> None:
     text = 'Timer successfully cancelled!' if job_removed else 'You have no active timer.'
     update.message.reply_text(text)
 
-def stat(update: Update, context: CallbackContext) -> None:
+def price(update: Update, context: CallbackContext) -> None:
     """Show latest price"""
     info   = get_source( params['port'] )
     metric = get_metric( info )
-
-    if context.args[0] == 'price':
-        desc = get_price( metric )
-    else:
-        desc = get_rsi  ( metric )
-
-    text = '<code>'+'\n'.join( desc )+'</code>'
+    desc   = get_price( metric )
+    text   = '<code>'+'\n'.join( desc )+'</code>'
     update.message.reply_text( text, parse_mode = "HTML" )
+
+def rsi(update: Update, context: CallbackContext) -> None:
+    """Show latest rsi"""
+    info   = get_source( params['port'] )
+    metric = get_metric( info )
+    desc   = get_rsi  ( metric )
+    text   = '<code>'+'\n'.join( desc )+'</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )       
 
 def filter(update: Update, context: CallbackContext) -> None:
     """Run detector"""
@@ -380,30 +408,41 @@ def thres(update: Update, context: CallbackContext) -> None:
 
 def setthr(update: Update, context: CallbackContext) -> None:
     """Set thresholds."""
-    if context.args[0].upper() == 'RSI':
-        try:
-            params['RSI_L'] = float( context.args[1] )
-            params['RSI_H'] = float( context.args[2] )
-        except:
-            pass
-    if context.args[0].upper() == 'DAY':
-        try:
-            params['DAY_L'] = float( context.args[1] )/100
-            params['DAY_H'] = float( context.args[2] )/100
-        except:
-            pass
+    try:
+        if context.args[0].upper() == 'RSI':
+            try:
+                params['RSI_L'] = float( context.args[1] )
+                params['RSI_H'] = float( context.args[2] )
+            except:
+                pass
+        if context.args[0].upper() == 'DAY':
+            try:
+                params['DAY_L'] = float( context.args[1] )/100
+                params['DAY_H'] = float( context.args[2] )/100
+            except:
+                pass
 
-    # save parameter
-    save_params( params )    
+        # save parameter
+        save_params( params )    
 
-    # show current threshold
-    thres( update, context )
+        # show current threshold
+        thres( update, context )
+    except:
+        update.message.reply_text( 'Usage: /set <rsi | price> <low> <high>' )
 
 def fear(update: Update, context: CallbackContext) -> None:
     """Show fear and greed chart."""
     needle_url, fear_list, overtime_url = get_fear_grid_info()
     update.message.reply_photo( needle_url   )
     update.message.reply_photo( overtime_url )
+
+def index(update: Update, context: CallbackContext) -> None:
+    """Show index price"""
+    info   = get_source( index_tickers )
+    metric = get_metric( info )
+    desc   = get_index ( metric )
+    text   = '<code>'+'\n'.join( desc )+'</code>'
+    update.message.reply_text( text, parse_mode = "HTML" )
 
 def sector(update: Update, context: CallbackContext) -> None:
     """Show sector price"""
@@ -449,7 +488,9 @@ def main():
     dispatcher.add_handler( CommandHandler("filter", filter ) )
     dispatcher.add_handler( CommandHandler("thres",  thres  ) )
     dispatcher.add_handler( CommandHandler("set",    setthr ) )
-    dispatcher.add_handler( CommandHandler("stat",   stat   ) )
+    dispatcher.add_handler( CommandHandler("price",  price  ) )
+    dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
+    dispatcher.add_handler( CommandHandler("index",  index  ) )
     dispatcher.add_handler( CommandHandler("sector", sector ) )
     dispatcher.add_handler( CommandHandler("fear",   fear   ) )
 

@@ -6,11 +6,9 @@
         "QQQ",
         "JEPI",
         "TSLA",
+        "BRK-B",
         "DBC",
-        "IAU",
-        "NQ=F",
-        "ES=F",
-        "YM=F"
+        "IAU"
     ],
     "RSI_L": 35.0,
     "RSI_H": 65.0,
