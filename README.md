@@ -9,6 +9,8 @@ python ftgram.py
 
 **You have to make "token.txt" which includes your telegram token.**
 
+You can refer to <a href="https://www.codementor.io/@karandeepbatra/part-1-how-to-create-a-telegram-bot-in-python-in-under-10-minutes-19yfdv4wrq" target="_blank">How to create a telegram bot</a>.
+
 ## Available Commands
 
 #### /help: shows usages
