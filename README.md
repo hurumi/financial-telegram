@@ -25,7 +25,9 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 /filter to run filter once
 /thres to show thresholds
 /set <rsi | day> <L> <H> to set thres.
-/stat <price | rsi> to show stat
+/price to show latest price
+/rsi to show latest rsi
+/index to show index stat
 /sector to show sector stat
 /fear to show fear and greed chart
 ```
@@ -36,7 +38,7 @@ Example:
 ```
 /ticker
 
-MSFT AAPL SPLG QQQ JEPI TSLA DBC IAU NQ=F ES=F YM=F
+MSFT AAPL SPLG QQQ JEPI TSLA DBC IAU
 ```
 
 #### /add \<tickers\>: add tickers
@@ -85,30 +87,50 @@ RSI  35.0  65.0
 DAY  -2.0   2.0
 ```
 
-#### /set \<rsi | day\> \<L\> \<H\>: sets thresholds
+#### /price: shows latest prices
 
 Example:
 ```
-/set rsi 30 70
+/price
+
+[JEPI ]    58.7 ( +0.1%)
+[SPLG ]    49.1 ( -0.7%)
+[MSFT ]   276.4 ( -1.3%)
+[IAU  ]    37.1 ( -1.5%)
+[QQQ  ]   318.2 ( -1.9%)
+[AAPL ]   150.6 ( -2.7%)
+[DBC  ]    25.2 ( -2.9%)
+[TSLA ]   766.4 ( -3.6%)
 ```
 
-#### /stat \<price | rsi\>: shows statistics
+#### /rsi: shows latest rsi
 
 Example:
 ```
-/stat rsi
+/rsi
 
 [IAU ] 55.9
 [DBC ] 54.9
 [JEPI] 43.0
-[YM=F] 40.6
-[ES=F] 39.1
 [MSFT] 38.6
 [SPLG] 38.0
 [TSLA] 37.8
-[NQ=F] 36.4
 [QQQ ] 35.0
 [AAPL] 32.5
+```
+
+#### /index: shows index statistics
+
+Example:
+```
+/index
+
+[Nasdaq] 12581.2 ( -2.0%)
+[S&P500]  4173.1 ( -0.7%)
+[DowJon] 32945.2 ( +0.0%)
+[Nas(F)] 13045.5 ( +0.0%)
+[S&P(F)]  4166.0 ( -0.1%)
+[DOW(F)] 32869.0 ( -0.2%)
 ```
 
 #### /sector: shows sector statistics
