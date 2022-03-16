@@ -3,6 +3,7 @@
 #
 
 # disable SSL warnings
+from sklearn import set_config
 import urllib3
 urllib3.disable_warnings( urllib3.exceptions.InsecureRequestWarning )
 
@@ -22,6 +23,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 from yahooquery import Ticker
 from numpy import NaN
 from bs4 import BeautifulSoup
+from datetime import datetime, timezone
 
 # -------------------------------------------------------------------------------------------------
 # Globals
@@ -285,7 +287,8 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '/rsi to show latest rsi\n'
     text += '/index to show index stat\n'
     text += '/sector to show sector stat\n'
-    text += '/fear to show fear and greed chart'
+    text += '/fear to show fear and greed chart\n'
+    text += '/job to show remaining time of job'
     update.message.reply_text( text )
 
 def ticker(update: Update, context: CallbackContext) -> None:
@@ -339,8 +342,11 @@ def periodic_filter(context: CallbackContext) -> None:
 
     # output when only entry changes
     if check_diff( prev_desc, desc ):
-        text = '\n'.join( desc )
-        context.bot.send_message( job.context, text, parse_mode = "HTML" )
+        if desc != []:
+            text = '\n'.join( desc )
+            context.bot.send_message( job.context, text, parse_mode = "HTML" )
+        else:
+            context.bot.send_message( job.context, "No filtered results" )
 
     # update detection
     prev_desc = [ elem[:elem.index('(')] for elem in desc ]
@@ -403,8 +409,12 @@ def filter(update: Update, context: CallbackContext) -> None:
     info   = get_source  ( params['port'] )
     metric = get_metric  ( info )    
     desc   = apply_filter( metric )
-    text = '\n'.join( desc )
-    update.message.reply_text( text, parse_mode = "HTML" )
+
+    if desc != []:
+        text = '\n'.join( desc )
+        update.message.reply_text( text, parse_mode = "HTML" )
+    else:
+        update.message.reply_text( "No filtered results" )
 
 def thres(update: Update, context: CallbackContext) -> None:
     """Show thresholds."""
@@ -458,6 +468,20 @@ def sector(update: Update, context: CallbackContext) -> None:
     text   = '\n'.join( desc )
     update.message.reply_text( text, parse_mode = "HTML" )
 
+def job(update: Update, context: CallbackContext) -> None:
+    """Show currently scheduled job"""
+    chat_id  = update.message.chat_id
+    job_list = context.job_queue.get_jobs_by_name( name=str(chat_id) )
+
+    if len( job_list ) == 0:
+        update.message.reply_text( "No currently scheduled job" )
+    else:
+        job    = job_list[0]
+        date_n = job.next_t
+        date_t = datetime.now( timezone.utc )
+        remain = ( date_n - date_t ).seconds
+        update.message.reply_text( f'Job will be executed after {remain} seconds' )
+
 # -------------------------------------------------------------------------------------------------
 # Main
 # -------------------------------------------------------------------------------------------------
@@ -499,6 +523,7 @@ def main():
     dispatcher.add_handler( CommandHandler("index",  index  ) )
     dispatcher.add_handler( CommandHandler("sector", sector ) )
     dispatcher.add_handler( CommandHandler("fear",   fear   ) )
+    dispatcher.add_handler( CommandHandler("job",    job    ) )
 
     # Start the Bot
     updater.start_polling()
