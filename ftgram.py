@@ -296,25 +296,31 @@ def ticker(update: Update, context: CallbackContext) -> None:
 
 def add(update: Update, context: CallbackContext) -> None:
     """Add tickers"""
-    for elem in context.args:
-        if elem not in params['port']:
-            p = Ticker( elem, verify=False, validate=True ).price
-            if p != {}: params['port'].append( elem.upper() )
-    save_params( params )
-    ticker( update, context )
+    if len( context.args ) > 1:
+        for elem in context.args:
+            if elem not in params['port']:
+                p = Ticker( elem, verify=False, validate=True ).price
+                if p != {}: params['port'].append( elem.upper() )
+        save_params( params )
+        ticker( update, context )
+    else:
+        update.message.reply_text('Usage: /add <tickers> to add tickers')
 
 def delete(update: Update, context: CallbackContext) -> None:
     """Del tickers"""
-    for elem in context.args:
-        params['port'].remove( elem.upper() )
+    if len( context.args ) > 1:
+        for elem in context.args:
+            params['port'].remove( elem.upper() )
 
-    # at least one ticker should exist
-    if len( params['port'] ) == 0:
-        update.message.reply_text( 'At least one ticker should exist, SPY is added by default' )
-        params['port'].append( 'SPY' )
+        # at least one ticker should exist
+        if len( params['port'] ) == 0:
+            update.message.reply_text( 'At least one ticker should exist, SPY is added by default' )
+            params['port'].append( 'SPY' )
 
-    save_params( params )
-    ticker( update, context )
+        save_params( params )
+        ticker( update, context )
+    else:
+        update.message.reply_text('Usage: /del <tickers> to del tickers')
 
 def periodic_filter(context: CallbackContext) -> None:
     """Run filter."""
