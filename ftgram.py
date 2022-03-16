@@ -3,7 +3,6 @@
 #
 
 # disable SSL warnings
-from sklearn import set_config
 import urllib3
 urllib3.disable_warnings( urllib3.exceptions.InsecureRequestWarning )
 
