@@ -296,7 +296,7 @@ def ticker(update: Update, context: CallbackContext) -> None:
 
 def add(update: Update, context: CallbackContext) -> None:
     """Add tickers"""
-    if len( context.args ) > 1:
+    if len( context.args ) > 0:
         for elem in context.args:
             if elem not in params['port']:
                 p = Ticker( elem, verify=False, validate=True ).price
@@ -308,7 +308,7 @@ def add(update: Update, context: CallbackContext) -> None:
 
 def delete(update: Update, context: CallbackContext) -> None:
     """Del tickers"""
-    if len( context.args ) > 1:
+    if len( context.args ) > 0:
         for elem in context.args:
             params['port'].remove( elem.upper() )
 
