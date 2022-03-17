@@ -298,7 +298,7 @@ def help(update: Update, context: CallbackContext) -> None:
                              '/filter: run filter once\n' +
                              '/thres: show thresholds\n' +
                              '/set <rsi|day> <L> <H>: set thres.\n' +
-                             '/job to show remaining time\n' )
+                             '/job: show remaining time\n' )
     text += '\n'                             
     
     text += '*Information*\n'
