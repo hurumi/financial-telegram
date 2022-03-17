@@ -3,6 +3,7 @@
 #
 
 # disable SSL warnings
+from glob import escape
 import urllib3
 urllib3.disable_warnings( urllib3.exceptions.InsecureRequestWarning )
 
@@ -15,6 +16,7 @@ import pandas as pd
 import os
 import json
 import requests
+import re
 
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
@@ -82,6 +84,12 @@ prev_desc = []
 # -------------------------------------------------------------------------------------------------
 # Functions
 # -------------------------------------------------------------------------------------------------
+
+def escape_markdown( text ):
+    # Use {} and reverse markdown carefully.
+    parse = re.sub(r"([_*\[\]()~`>\#\+\-=|\.!])", r"\\\1", text)
+    reparse = re.sub(r"\\\\([_*\[\]()~`>\#\+\-=|\.!])", r"\1", parse)
+    return reparse
 
 def save_params( _params ):
 
@@ -273,22 +281,34 @@ def get_fear_grid_info():
 
 def help(update: Update, context: CallbackContext) -> None:
     """Sends explanation on how to use the bot."""
-    text  = '/help: show usages\n'
-    text += '/ticker: show tickers\n'
-    text += '/add <tickers>: add tickers\n'
-    text += '/del <tickers>: del tickers\n'
-    text += '/start <seconds>: start filter\n'
-    text += '/stop: stop filter\n'
-    text += '/filter: run filter once\n'
-    text += '/thres: show thresholds\n'
-    text += '/set <rsi|day> <L> <H>: set thres.\n'
-    text += '/price [<tickers>]: show prices\n'
-    text += '/rsi [<tickers>]: show rsi values\n'
-    text += '/index: show index stat\n'
-    text += '/sector: show sector stat\n'
-    text += '/fear: show fear & greed chart\n'
-    text += '/job to show remaining time'
-    update.message.reply_text( text )
+    
+    text  = '*Help*\n'
+    text += escape_markdown( '/help: show usages\n' )
+    text += '\n'
+
+    text += '*Ticker*\n'
+    text += escape_markdown( '/ticker: show tickers\n' +
+                             '/add <tickers>: add tickers\n' +
+                             '/del <tickers>: del tickers\n' )
+    text += '\n'
+    
+    text += '*Filter*\n'
+    text += escape_markdown( '/start <seconds>: start filter\n' +
+                             '/stop: stop filter\n' +
+                             '/filter: run filter once\n' +
+                             '/thres: show thresholds\n' +
+                             '/set <rsi|day> <L> <H>: set thres.\n' +
+                             '/job to show remaining time\n' )
+    text += '\n'                             
+    
+    text += '*Information*\n'
+    text += escape_markdown( '/price [<tickers>]: show prices\n' +
+                             '/rsi [<tickers>]: show rsi values\n' +
+                             '/index: show index stat\n' +
+                             '/sector: show sector stat\n' +
+                             '/fear: show fear & greed chart\n' )
+                             
+    update.message.reply_text( text, parse_mode="MarkdownV2" )
 
 def ticker(update: Update, context: CallbackContext) -> None:
     """Show tickers"""
