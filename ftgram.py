@@ -273,21 +273,21 @@ def get_fear_grid_info():
 
 def help(update: Update, context: CallbackContext) -> None:
     """Sends explanation on how to use the bot."""
-    text  = '/help to show usages\n'
-    text += '/ticker to show tickers\n'
-    text += '/add <tickers> to add tickers\n'
-    text += '/del <tickers> to del tickers\n'
-    text += '/start <seconds> to run periodic filter\n'
-    text += '/stop to stop periodic filter\n'
-    text += '/filter to run filter once\n'
-    text += '/thres to show thresholds\n'
-    text += '/set <rsi | day> <L> <H> to set thres.\n'
-    text += '/price to show latest price\n'
-    text += '/rsi to show latest rsi\n'
-    text += '/index to show index stat\n'
-    text += '/sector to show sector stat\n'
-    text += '/fear to show fear and greed chart\n'
-    text += '/job to show remaining time of job'
+    text  = '/help: show usages\n'
+    text += '/ticker: show tickers\n'
+    text += '/add <tickers>: add tickers\n'
+    text += '/del <tickers>: del tickers\n'
+    text += '/start <seconds>: start filter\n'
+    text += '/stop: stop filter\n'
+    text += '/filter: run filter once\n'
+    text += '/thres: show thresholds\n'
+    text += '/set <rsi|day> <L> <H>: set thres.\n'
+    text += '/price [<tickers>]: show prices\n'
+    text += '/rsi [<tickers>]: show rsi values\n'
+    text += '/index: show index stat\n'
+    text += '/sector: show sector stat\n'
+    text += '/fear: show fear & greed chart\n'
+    text += '/job to show remaining time'
     update.message.reply_text( text )
 
 def ticker(update: Update, context: CallbackContext) -> None:
@@ -299,10 +299,10 @@ def ticker(update: Update, context: CallbackContext) -> None:
 def add(update: Update, context: CallbackContext) -> None:
     """Add tickers"""
     if len( context.args ) > 0:
+        t = Ticker( context.args, verify=False, validate=True )
         for elem in context.args:
-            if elem not in params['port']:
-                p = Ticker( elem, verify=False, validate=True ).price
-                if p != {}: params['port'].append( elem.upper() )
+            if elem.upper() in t.symbols and elem.upper() not in params['port']:
+                params['port'].append( elem.upper() )
         save_params( params )
         ticker( update, context )
     else:
@@ -389,18 +389,30 @@ def stop(update: Update, context: CallbackContext) -> None:
 
 def price(update: Update, context: CallbackContext) -> None:
     """Show latest price"""
-    info   = get_source( params['port'] )
-    metric = get_metric( info )
-    desc   = get_price( metric )
-    text   = '\n'.join( desc )
+    if len( context.args ) > 0:
+        port_list = Ticker( context.args, verify=False, validate=True ).symbols
+        if port_list == []: port_list = params['port']
+    else:
+        port_list = params['port']
+
+    info   = get_source( port_list )
+    metric = get_metric( info      )
+    desc   = get_price ( metric    )
+    text   = '\n'.join ( desc      )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def rsi(update: Update, context: CallbackContext) -> None:
     """Show latest rsi"""
-    info   = get_source( params['port'] )
-    metric = get_metric( info )
-    desc   = get_rsi  ( metric )
-    text   = '\n'.join( desc )
+    if len( context.args ) > 0:
+        port_list = Ticker( context.args, verify=False, validate=True ).symbols
+        if port_list == []: port_list = params['port']
+    else:
+        port_list = params['port']
+
+    info   = get_source( port_list )
+    metric = get_metric( info      )
+    desc   = get_rsi   ( metric    )
+    text   = '\n'.join ( desc      )
     update.message.reply_text( text, parse_mode = "HTML" )       
 
 def filter(update: Update, context: CallbackContext) -> None:
