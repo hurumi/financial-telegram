@@ -15,16 +15,16 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 
 #### /help: shows usages
 
-<pre>
-<b>Help</b>
+```
+Help
 /help: show usages
 
-<b>Ticker</b>
+Ticker
 /ticker: show tickers
 /add <tickers>: add tickers
 /del <tickers>: del tickers
 
-<b>Filter</b>
+Filter
 /start <seconds>: start filter
 /stop: stop filter
 /filter: run filter once
@@ -32,13 +32,13 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 /set <rsi|day> <L> <H>: set thres.
 /job to show remaining time
 
-<b>Information</b>
+Information
 /price [<tickers>]: show prices
 /rsi [<tickers>]: show rsi values
 /index: show index stat
 /sector: show sector stat
 /fear: show fear & greed chart
-</pre>
+```
 
 #### /ticker: shows current tickers
 
@@ -54,6 +54,8 @@ MSFT AAPL SPLG QQQ JEPI TSLA DBC IAU
 Example:
 ```
 /add NVDA O JPM
+
+MSFT AAPL SPLG QQQ JEPI TSLA DBC IAU NVDA O JPM
 ```
 
 #### /del \<tickers\>: delete tickers
@@ -61,6 +63,8 @@ Example:
 Example:
 ```
 /del MSFT AAPL
+
+SPLG QQQ JEPI TSLA DBC IAU NVDA O JPM
 ```
 Note: if all tickers are removed, SPY is automatically added
 
