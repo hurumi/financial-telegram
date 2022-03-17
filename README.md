@@ -13,6 +13,8 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 
 ## Available Commands
 
+### Help Commands
+
 #### /help: shows usages
 
 ```
@@ -30,7 +32,7 @@ Filter
 /filter: run filter once
 /thres: show thresholds
 /set <rsi|day> <L> <H>: set thres.
-/job to show remaining time
+/job: show remaining time
 
 Information
 /price [<tickers>]: show prices
@@ -39,6 +41,8 @@ Information
 /sector: show sector stat
 /fear: show fear & greed chart
 ```
+
+### Ticker Commands
 
 #### /ticker: shows current tickers
 
@@ -67,6 +71,8 @@ Example:
 SPLG QQQ JEPI TSLA DBC IAU NVDA O JPM
 ```
 Note: if all tickers are removed, SPY is automatically added
+
+### Filter Commands
 
 #### /start \<seconds\>: starts periodic filter
 
@@ -100,14 +106,28 @@ RSI  35.0  65.0
 DAY  -2.0   2.0
 ```
 
-#### /set <rsi|day> <L> <H>: set threshold for rsi or daily change
+#### /set \<rsi|day\> \<L\> \<H\>: set threshold for rsi or daily change
 
 Example:
 ```
 /set rsi 30 70
+
+RSI  30.0  70.0
+DAY  -2.0   2.0
 ```
 
-#### /price: shows latest prices
+#### /job: show remaining time (seconds) if any filter is running
+
+Example:
+```
+/job
+
+Job will be executed after 840 seconds
+```
+
+### Information Commands
+
+#### /price [\<tickers\>]: shows latest prices
 
 Example 1 (for current ticker):
 ```
@@ -131,7 +151,7 @@ Example 2 (for arguments):
 [O    ]    65.6 ( +0.7%)
 ```
 
-#### /rsi: shows latest rsi
+#### /rsi [\<tickers\>]: shows latest rsi
 
 Example 1 (for current ticker):
 ```
