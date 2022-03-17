@@ -484,6 +484,12 @@ def setthr(update: Update, context: CallbackContext) -> None:
 def fear(update: Update, context: CallbackContext) -> None:
     """Show fear and greed chart."""
     needle_url, fear_list, overtime_url = get_fear_grid_info()
+
+    # add timestamp to avoid cache
+    timestamp    = str( datetime.now().isoformat() )
+    overtime_url = f'{overtime_url}&a={timestamp}'
+
+    # send photos
     update.message.reply_photo( needle_url   )
     update.message.reply_photo( overtime_url )
 
