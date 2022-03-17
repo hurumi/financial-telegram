@@ -15,22 +15,30 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 
 #### /help: shows usages
 
-```
-/help to show usages
-/ticker to show tickers
-/add <tickers> to add tickers
-/del <tickers> to del tickers
-/start <seconds> to run periodic filter
-/stop to stop periodic filter
-/filter to run filter once
-/thres to show thresholds
-/set <rsi | day> <L> <H> to set thres.
-/price to show latest price
-/rsi to show latest rsi
-/index to show index stat
-/sector to show sector stat
-/fear to show fear and greed chart
-```
+<pre>
+<b>Help</b>
+/help: show usages
+
+<b>Ticker</b>
+/ticker: show tickers
+/add <tickers>: add tickers
+/del <tickers>: del tickers
+
+<b>Filter</b>
+/start <seconds>: start filter
+/stop: stop filter
+/filter: run filter once
+/thres: show thresholds
+/set <rsi|day> <L> <H>: set thres.
+/job to show remaining time
+
+<b>Information</b>
+/price [<tickers>]: show prices
+/rsi [<tickers>]: show rsi values
+/index: show index stat
+/sector: show sector stat
+/fear: show fear & greed chart
+</pre>
 
 #### /ticker: shows current tickers
 
@@ -62,6 +70,7 @@ Note: if all tickers are removed, SPY is automatically added
 * Filter checks RSI and daily changes, then notifies if pre-defined conditions are satisfied
 * The conditions are defined by two numbers, low threshold and high threshold
 * If the metric is lower than low threshold or higher than high threshold, it is notified
+* Filter results are displayed only when they are different from previous ones
 
 #### /stop: stop periodic filter
 
@@ -87,9 +96,16 @@ RSI  35.0  65.0
 DAY  -2.0   2.0
 ```
 
-#### /price: shows latest prices
+#### /set <rsi|day> <L> <H>: set threshold for rsi or daily change
 
 Example:
+```
+/set rsi 30 70
+```
+
+#### /price: shows latest prices
+
+Example 1 (for current ticker):
 ```
 /price
 
@@ -103,9 +119,17 @@ Example:
 [TSLA ]   766.4 ( -3.6%)
 ```
 
+Example 2 (for arguments):
+```
+/price NVDA O
+
+[NVDA ]   245.0 ( +6.6%)
+[O    ]    65.6 ( +0.7%)
+```
+
 #### /rsi: shows latest rsi
 
-Example:
+Example 1 (for current ticker):
 ```
 /rsi
 
@@ -117,6 +141,14 @@ Example:
 [TSLA] 37.8
 [QQQ ] 35.0
 [AAPL] 32.5
+```
+
+Example 2 (for arguments):
+```
+/rsi PYPL XOM
+
+[PYPL ] 45.7
+[XOM  ] 43.7
 ```
 
 #### /index: shows index statistics
@@ -154,3 +186,5 @@ Example:
 ```
 
 #### /fear: shows fear and greed charts
+
+Show charts from [Fear and Greed Index in CNN Business](https://money.cnn.com/data/fear-and-greed/)
