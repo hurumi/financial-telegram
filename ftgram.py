@@ -109,9 +109,10 @@ def load_params():
 
 def get_source( _port ):
 
-    tick = Ticker( _port, verify=False )
+    tick = Ticker( _port, verify=False, asynchronous=True )
 
     info = {}
+    info[ 'ticker'  ] = tick
     info[ 'price'   ] = tick.price
     info[ 'history' ] = tick.history( period='1y', interval='1d' )
 
@@ -140,6 +141,9 @@ def get_metric( _info ):
     # add rows
     df.loc[ 'RSI' ] = rsi_list
     df.loc[ 'CCI' ] = cci_list
+
+    # column reordering
+    df = df[ _info['ticker'].symbols ]
 
     return df
 
