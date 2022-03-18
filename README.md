@@ -27,7 +27,7 @@ Ticker
 /del <tickers>: del tickers
 
 Filter
-/start <seconds>: start filter
+/run <seconds>: run filter
 /stop: stop filter
 /filter: run filter once
 /thres: show thresholds
@@ -37,6 +37,7 @@ Filter
 Information
 /price [<tickers>]: show prices
 /rsi [<tickers>]: show rsi values
+/draw [<tickers>] <months>: chart
 /index: show index stat
 /sector: show sector stat
 /fear: show fear & greed chart
@@ -74,9 +75,9 @@ Note: if all tickers are removed, SPY is automatically added
 
 ### Filter Commands
 
-#### /start \<seconds\>: starts periodic filter
+#### /run \<seconds\>: run periodic filter
 
-* Starts filter function periodically
+* Run filter function periodically
 * Filter checks RSI and daily changes, then notifies if pre-defined conditions are satisfied
 * The conditions are defined by two numbers, low threshold and high threshold
 * If the metric is lower than low threshold or higher than high threshold, it is notified
@@ -175,6 +176,24 @@ Example 2 (for arguments):
 [XOM  ] 43.7
 ```
 
+#### /draw [\<tickers\>] \<month\>: draw relative gain chart
+
+Example 1 (draw msft and aapl chart for 3 month)
+```
+/draw msft aapl 3
+```
+<img src="/images/draw-example.jpg" width="100%">
+
+Example 2 (draw current tickers for 6 month)
+```
+/draw 6
+```
+
+Example 3 (draw current tickers for 1 month)
+```
+/draw
+```
+
 #### /index: shows index statistics
 
 Example:
@@ -212,3 +231,6 @@ Example:
 #### /fear: shows fear and greed charts
 
 Show charts from [Fear and Greed Index in CNN Business](https://money.cnn.com/data/fear-and-greed/)
+
+<img src="/images/fear1.jpg" width="100%">
+<img src="/images/fear2.jpg" width="100%">
