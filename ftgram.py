@@ -341,7 +341,7 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '\n'
     
     text += '*Filter*\n'
-    text += escape_markdown( '/start <seconds>: start filter\n' +
+    text += escape_markdown( '/run <seconds>: run filter\n' +
                              '/stop: stop filter\n' +
                              '/filter: run filter once\n' +
                              '/thres: show thresholds\n' +
@@ -428,7 +428,7 @@ def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
         job.schedule_removal()
     return True
 
-def start(update: Update, context: CallbackContext) -> None:
+def runft(update: Update, context: CallbackContext) -> None:
     """Add a job to the queue."""
     chat_id = update.message.chat_id
     try:
@@ -447,7 +447,7 @@ def start(update: Update, context: CallbackContext) -> None:
         update.message.reply_text(text)
 
     except (IndexError, ValueError):
-        update.message.reply_text('Usage: /start <seconds>')
+        update.message.reply_text('Usage: /run <seconds>')
 
 def stop(update: Update, context: CallbackContext) -> None:
     """Remove the job if the user changed their mind."""
@@ -617,10 +617,11 @@ def main():
 
     # on different commands - answer in Telegram
     dispatcher.add_handler( CommandHandler("help",   help   ) )
+    dispatcher.add_handler( CommandHandler("start",  help   ) )
     dispatcher.add_handler( CommandHandler("ticker", ticker ) )
     dispatcher.add_handler( CommandHandler("add",    add    ) )
     dispatcher.add_handler( CommandHandler("del",    delete ) )
-    dispatcher.add_handler( CommandHandler("start",  start  ) )
+    dispatcher.add_handler( CommandHandler("run",    runft  ) )
     dispatcher.add_handler( CommandHandler("stop",   stop   ) )
     dispatcher.add_handler( CommandHandler("filter", filter ) )
     dispatcher.add_handler( CommandHandler("thres",  thres  ) )
