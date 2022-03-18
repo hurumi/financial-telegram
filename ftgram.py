@@ -3,7 +3,6 @@
 #
 
 # disable SSL warnings
-from glob import escape
 import urllib3
 urllib3.disable_warnings( urllib3.exceptions.InsecureRequestWarning )
 
@@ -18,6 +17,11 @@ import json
 import requests
 import re
 
+import matplotlib as mat
+
+# use agg backend to suppress warnings
+mat.use('agg')
+
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
@@ -25,6 +29,7 @@ from yahooquery import Ticker
 from numpy import NaN
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 
 # -------------------------------------------------------------------------------------------------
 # Globals
@@ -279,6 +284,45 @@ def get_fear_grid_info():
 
     return needle_url, fear_list, overtime_url
 
+def get_num_points( index, dmonth ):
+
+    last = index[-1]
+    d    = relativedelta( months = dmonth )
+    num_points = len( index [ index >= ( last - d ) ] )
+
+    return num_points
+
+def get_chart( _info, dmonth ):
+
+    # data source
+    source = _info['history']['close']
+
+    # compute number of points
+    num_points = get_num_points( source[ _info['ticker'].symbols[0] ].index, dmonth )
+
+    # for all tickers
+    sr_list = []
+    for option in _info['ticker'].symbols:
+        _data = source[option].rename(option)[-num_points:]
+        _data = ( ( _data / _data[0] ) - 1 ) * 100.
+        sr_list.append( _data )
+    df = pd.DataFrame( pd.concat( sr_list, axis=1 ) )
+    df.index = pd.to_datetime( df.index )
+
+    # use matplotlib
+    ax = df.plot( y=_info['ticker'].symbols )
+
+    # customization
+    mat.pyplot.xlabel( 'Date'       )
+    mat.pyplot.ylabel( 'Change (%)' )
+    mat.pyplot.grid  ( True         )
+    ax.yaxis.set_major_formatter( mat.ticker.PercentFormatter() )
+
+    # save to file
+    mat.pyplot.savefig( '_tmp.png', bbox_inches='tight' )
+
+    return '_tmp.png'
+
 # -------------------------------------------------------------------------------------------------
 # Callbacks
 # -------------------------------------------------------------------------------------------------
@@ -308,6 +352,7 @@ def help(update: Update, context: CallbackContext) -> None:
     text += '*Information*\n'
     text += escape_markdown( '/price [<tickers>]: show prices\n' +
                              '/rsi [<tickers>]: show rsi values\n' +
+                             '/draw [<tickers>] <months>: chart\n' +
                              '/index: show index stat\n' +
                              '/sector: show sector stat\n' +
                              '/fear: show fear & greed chart\n' )
@@ -439,6 +484,27 @@ def rsi(update: Update, context: CallbackContext) -> None:
     text   = '\n'.join ( desc      )
     update.message.reply_text( text, parse_mode = "HTML" )       
 
+def draw(update: Update, context: CallbackContext) -> None:
+    """Draw chart"""
+    try:
+        if len( context.args ) > 1:
+            port_list =      context.args[:-1]
+            dmonth    = int( context.args[ -1] )
+        elif len( context.args ) == 1:
+            port_list =      params['port']
+            dmonth    = int( context.args[ -1] )
+        else:
+            port_list = params['port']
+            dmonth    = 1
+
+        info   = get_source( port_list    )
+        chart  = get_chart ( info, dmonth )
+
+        update.message.reply_photo( photo=open( chart, 'rb') )
+        os.remove( chart )
+    except:
+        update.message.reply_text( 'Usage: /draw [<tickers>] <months>: draw chart' )
+
 def filter(update: Update, context: CallbackContext) -> None:
     """Run detector"""
     info   = get_source  ( params['port'] )
@@ -561,6 +627,7 @@ def main():
     dispatcher.add_handler( CommandHandler("set",    setthr ) )
     dispatcher.add_handler( CommandHandler("price",  price  ) )
     dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
+    dispatcher.add_handler( CommandHandler("draw",   draw    ) )
     dispatcher.add_handler( CommandHandler("index",  index  ) )
     dispatcher.add_handler( CommandHandler("sector", sector ) )
     dispatcher.add_handler( CommandHandler("fear",   fear   ) )
