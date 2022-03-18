@@ -182,7 +182,7 @@ Example 1 (draw msft and aapl chart for 3 month)
 ```
 /draw msft aapl 3
 ```
-<img src="/images/draw-example.jpg" width="100%">
+<img src="/images/draw-example.jpg" width="50%">
 
 Example 2 (draw current tickers for 6 month)
 ```
@@ -232,5 +232,5 @@ Example:
 
 Show charts from [Fear and Greed Index in CNN Business](https://money.cnn.com/data/fear-and-greed/)
 
-<img src="/images/fear1.jpg" width="100%">
-<img src="/images/fear2.jpg" width="100%">
+<img src="/images/fear1.jpg" width="50%">
+<img src="/images/fear2.jpg" width="50%">
