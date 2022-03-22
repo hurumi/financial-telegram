@@ -47,6 +47,10 @@ _DAY_THRESHOLD_H = 0.02
 attr_list = { 
     'regularMarketChangePercent':'DAY', 
     'regularMarketPrice':'PRICE',
+    'preMarketChangePercent':'DAY', 
+    'preMarketPrice':'PRICE',
+    'postMarketChangePercent':'DAY', 
+    'postMarketPrice':'PRICE',
 }
 params = {
     'port'   : _DEFAULT_PORT,
@@ -194,6 +198,44 @@ def get_price( _metric ):
     for option in _metric.columns:
         price = _metric[option]['regularMarketPrice']
         delta = _metric[option]['regularMarketChangePercent']*100
+        temp.append( [ delta, option, price ] )
+    
+    temp.sort( reverse=True )
+    desc = [ f'<code>[{option:5}] {price:7.1f} ({delta:+5.1f}%)</code>' for delta, option, price in temp ]
+
+    return desc
+
+def get_pre( _metric ):
+
+    temp = []
+
+    # for each ticker
+    for option in _metric.columns:
+        try:
+            price = _metric[option]['preMarketPrice']
+            delta = _metric[option]['preMarketChangePercent']*100
+        except:
+            price = _metric[option]['regularMarketPrice']
+            delta = 0.0
+        temp.append( [ delta, option, price ] )
+    
+    temp.sort( reverse=True )
+    desc = [ f'<code>[{option:5}] {price:7.1f} ({delta:+5.1f}%)</code>' for delta, option, price in temp ]
+
+    return desc
+
+def get_post( _metric ):
+
+    temp = []
+
+    # for each ticker
+    for option in _metric.columns:
+        try:
+            price = _metric[option]['postMarketPrice']
+            delta = _metric[option]['postMarketChangePercent']*100       
+        except:
+            price = _metric[option]['regularMarketPrice']
+            delta = 0.0             
         temp.append( [ delta, option, price ] )
     
     temp.sort( reverse=True )
@@ -351,6 +393,8 @@ def help(update: Update, context: CallbackContext) -> None:
     
     text += '*Information*\n'
     text += escape_markdown( '/price [<tickers>]: show prices\n' +
+                             '/pre [<tickers>]: show pre-prices\n' +
+                             '/post [<tickers>]: show post-prices\n' +
                              '/rsi [<tickers>]: show rsi values\n' +
                              '/draw [<tickers>] <months>: chart\n' +
                              '/index: show index stat\n' +
@@ -469,6 +513,34 @@ def price(update: Update, context: CallbackContext) -> None:
     desc   = get_price ( metric    )
     text   = '\n'.join ( desc      )
     update.message.reply_text( text, parse_mode = "HTML" )
+
+def pre(update: Update, context: CallbackContext) -> None:
+    """Show latest price"""
+    if len( context.args ) > 0:
+        port_list = Ticker( context.args, verify=False, validate=True ).symbols
+        if port_list == []: port_list = params['port']
+    else:
+        port_list = params['port']
+
+    info   = get_source( port_list )
+    metric = get_metric( info      )
+    desc   = get_pre   ( metric    )
+    text   = '\n'.join ( desc      )
+    update.message.reply_text( text, parse_mode = "HTML" )    
+
+def post(update: Update, context: CallbackContext) -> None:
+    """Show latest price"""
+    if len( context.args ) > 0:
+        port_list = Ticker( context.args, verify=False, validate=True ).symbols
+        if port_list == []: port_list = params['port']
+    else:
+        port_list = params['port']
+
+    info   = get_source( port_list )
+    metric = get_metric( info      )
+    desc   = get_post  ( metric    )
+    text   = '\n'.join ( desc      )
+    update.message.reply_text( text, parse_mode = "HTML" )  
 
 def rsi(update: Update, context: CallbackContext) -> None:
     """Show latest rsi"""
@@ -627,8 +699,10 @@ def main():
     dispatcher.add_handler( CommandHandler("thres",  thres  ) )
     dispatcher.add_handler( CommandHandler("set",    setthr ) )
     dispatcher.add_handler( CommandHandler("price",  price  ) )
+    dispatcher.add_handler( CommandHandler("pre",    pre    ) )
+    dispatcher.add_handler( CommandHandler("post",   post   ) )
     dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
-    dispatcher.add_handler( CommandHandler("draw",   draw    ) )
+    dispatcher.add_handler( CommandHandler("draw",   draw   ) )
     dispatcher.add_handler( CommandHandler("index",  index  ) )
     dispatcher.add_handler( CommandHandler("sector", sector ) )
     dispatcher.add_handler( CommandHandler("fear",   fear   ) )
