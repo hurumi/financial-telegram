@@ -339,16 +339,23 @@ def get_chart( _info, dmonth ):
     # data source
     source = _info['history']['close']
 
-    # compute number of points
-    num_points = get_num_points( source[ _info['ticker'].symbols[0] ].index, dmonth )
-
     # for all tickers
     sr_list = []
     for option in _info['ticker'].symbols:
+        # compute number of points
+        num_points = get_num_points( source[option].index, dmonth )
+
+        # prepare data
         _data = source[option].rename(option)[-num_points:]
+        _data = _data[ ~_data.index.duplicated() ]  # remove duplicated index before concat
+
+        # normalize
         _data = ( ( _data / _data[0] ) - 1 ) * 100.
+
+        # add to list
         sr_list.append( _data )
-    df = pd.DataFrame( pd.concat( sr_list, axis=1 ) )
+
+    df = pd.DataFrame( pd.concat( sr_list, axis=1 ) ).dropna()
     df.index = pd.to_datetime( df.index )
 
     # use matplotlib
@@ -568,7 +575,7 @@ def draw(update: Update, context: CallbackContext) -> None:
         else:
             port_list = params['port']
             dmonth    = 1
-
+        
         info   = get_source( port_list    )
         chart  = get_chart ( info, dmonth )
 
