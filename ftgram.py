@@ -26,7 +26,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 from yahooquery import Ticker
-from numpy import NaN
+from numpy import isnan
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
@@ -211,10 +211,10 @@ def get_pre( _metric ):
 
     # for each ticker
     for option in _metric.columns:
-        try:
+        if isnan( _metric[option]['preMarketPrice'] ) == False:
             price = _metric[option]['preMarketPrice']
             delta = _metric[option]['preMarketChangePercent']*100
-        except:
+        else:
             price = _metric[option]['regularMarketPrice']
             delta = 0.0
         temp.append( [ delta, option, price ] )
@@ -230,10 +230,10 @@ def get_post( _metric ):
 
     # for each ticker
     for option in _metric.columns:
-        try:
+        if isnan( _metric[option]['postMarketPrice'] ) == False:
             price = _metric[option]['postMarketPrice']
             delta = _metric[option]['postMarketChangePercent']*100       
-        except:
+        else:
             price = _metric[option]['regularMarketPrice']
             delta = 0.0             
         temp.append( [ delta, option, price ] )
