@@ -88,6 +88,23 @@ index_tickers = {
     'ES=F':  'S&P(F)',
     'YM=F':  'DOW(F)',
 }
+headers = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) \
+            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
+}
+finviz_info = {
+    'RSI_OVERSOLD(40)': { 
+        'url':'https://finviz.com/screener.ashx?v=171&f=ta_rsi_os40&ft=3&o=-marketcap',
+        'col': [ 'No.', 'Beta', 'ATR', 'SMA20', 'SMA50', 'SMA200', '52W High', '52W Low', 'RSI', 'Price', 
+                 'Change', 'from Open', 'Gap', 'Volume' ]
+    },
+    'RSI_OVERBOUGHT(60)': { 
+        'url':'https://finviz.com/screener.ashx?v=171&f=ta_rsi_ob60&ft=3&o=-marketcap',
+        'col': [ 'No.', 'Beta', 'ATR', 'SMA20', 'SMA50',  'SMA200', '52W High', '52W Low', 'RSI', 'Price', 
+                 'Change', 'from Open', 'Gap', 'Volume' ]
+    }    
+}
+
 prev_desc = []
 
 # -------------------------------------------------------------------------------------------------
@@ -372,6 +389,22 @@ def get_chart( _info, dmonth ):
 
     return '_tmp.png'
 
+def crawl_finviz( url, colidx, numcols ):
+
+    session = requests.Session()
+    website = session.get(url, headers=headers, timeout=10, verify=False)
+
+    soup = BeautifulSoup(website.text, "lxml")
+
+    url_all1 = soup.find_all('a', {'class':"screener-link-primary"})
+    url_all2 = soup.find_all('a', {'class':"screener-link"})
+
+    n = len( url_all2 )
+    tick_list = [ elem.text for elem in url_all1 ]
+    rsi_list  = [ url_all2[i].text for i in range( colidx, n, numcols ) ]
+
+    return dict( zip( tick_list, rsi_list ) )
+
 # -------------------------------------------------------------------------------------------------
 # Callbacks
 # -------------------------------------------------------------------------------------------------
@@ -407,7 +440,12 @@ def help(update: Update, context: CallbackContext) -> None:
                              '/index: show index stat\n' +
                              '/sector: show sector stat\n' +
                              '/fear: show fear & greed chart\n' )
-                             
+    text += '\n'                             
+    
+    text += '*Screener*\n'
+    text += escape_markdown( '/oversold: show 10 RSI<40 tickers\n' +
+                             '/overbought: show 10 RSI>60 tickers\n' )
+
     update.message.reply_text( text, parse_mode="MarkdownV2" )
 
 def ticker(update: Update, context: CallbackContext) -> None:
@@ -668,6 +706,22 @@ def job(update: Update, context: CallbackContext) -> None:
         remain = ( date_n - date_t ).seconds
         update.message.reply_text( f'Job will be executed after {remain} seconds' )
 
+def oversold(update: Update, context: CallbackContext) -> None:
+    """Show 10 RSI<40 tickers"""
+    info   = finviz_info[ 'RSI_OVERSOLD(40)' ]
+    result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
+    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
+    text   = '\n'.join( desc )
+    update.message.reply_text( text, parse_mode = "HTML" )
+
+def overbought(update: Update, context: CallbackContext) -> None:
+    """Show 10 RSI>60 tickers"""
+    info   = finviz_info[ 'RSI_OVERBOUGHT(60)' ]
+    result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
+    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
+    text   = '\n'.join( desc )
+    update.message.reply_text( text, parse_mode = "HTML" )
+
 # -------------------------------------------------------------------------------------------------
 # Main
 # -------------------------------------------------------------------------------------------------
@@ -695,25 +749,27 @@ def main():
     dispatcher = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dispatcher.add_handler( CommandHandler("help",   help   ) )
-    dispatcher.add_handler( CommandHandler("start",  help   ) )
-    dispatcher.add_handler( CommandHandler("ticker", ticker ) )
-    dispatcher.add_handler( CommandHandler("add",    add    ) )
-    dispatcher.add_handler( CommandHandler("del",    delete ) )
-    dispatcher.add_handler( CommandHandler("run",    runft  ) )
-    dispatcher.add_handler( CommandHandler("stop",   stop   ) )
-    dispatcher.add_handler( CommandHandler("filter", filter ) )
-    dispatcher.add_handler( CommandHandler("thres",  thres  ) )
-    dispatcher.add_handler( CommandHandler("set",    setthr ) )
-    dispatcher.add_handler( CommandHandler("price",  price  ) )
-    dispatcher.add_handler( CommandHandler("pre",    pre    ) )
-    dispatcher.add_handler( CommandHandler("post",   post   ) )
-    dispatcher.add_handler( CommandHandler("rsi",    rsi    ) )
-    dispatcher.add_handler( CommandHandler("draw",   draw   ) )
-    dispatcher.add_handler( CommandHandler("index",  index  ) )
-    dispatcher.add_handler( CommandHandler("sector", sector ) )
-    dispatcher.add_handler( CommandHandler("fear",   fear   ) )
-    dispatcher.add_handler( CommandHandler("job",    job    ) )
+    dispatcher.add_handler( CommandHandler("help",       help       ) )
+    dispatcher.add_handler( CommandHandler("start",      help       ) )
+    dispatcher.add_handler( CommandHandler("ticker",     ticker     ) )
+    dispatcher.add_handler( CommandHandler("add",        add        ) )
+    dispatcher.add_handler( CommandHandler("del",        delete     ) )
+    dispatcher.add_handler( CommandHandler("run",        runft      ) )
+    dispatcher.add_handler( CommandHandler("stop",       stop       ) )
+    dispatcher.add_handler( CommandHandler("filter",     filter     ) )
+    dispatcher.add_handler( CommandHandler("thres",      thres      ) )
+    dispatcher.add_handler( CommandHandler("set",        setthr     ) )
+    dispatcher.add_handler( CommandHandler("price",      price      ) )
+    dispatcher.add_handler( CommandHandler("pre",        pre        ) )
+    dispatcher.add_handler( CommandHandler("post",       post       ) )
+    dispatcher.add_handler( CommandHandler("rsi",        rsi        ) )
+    dispatcher.add_handler( CommandHandler("draw",       draw       ) )
+    dispatcher.add_handler( CommandHandler("index",      index      ) )
+    dispatcher.add_handler( CommandHandler("sector",     sector     ) )
+    dispatcher.add_handler( CommandHandler("fear",       fear       ) )
+    dispatcher.add_handler( CommandHandler("job",        job        ) )
+    dispatcher.add_handler( CommandHandler("oversold",   oversold   ) )
+    dispatcher.add_handler( CommandHandler("overbought", overbought ) )
 
     # Start the Bot
     updater.start_polling()
