@@ -261,16 +261,6 @@ Example:
 [CL   ] 39.5
 [KMB  ] 34.6
 [BAX  ] 35.7
-[TSN  ] 38.8
-[PHG  ] 37.5
-[SWK  ] 30.3
-[OKTA ] 38.1
-[SUI  ] 37.7
-[RYAAY] 38.7
-[CLX  ] 38.4
-[IEP  ] 29.2
-[HNP  ] 37.8
-[DPZ  ] 40.0
 ```
 
 #### /overbought: shows 10 RSI>60 tickers
@@ -289,14 +279,4 @@ Example:
 [NVDA ] 64.1
 [UNH  ] 64.5
 [CVX  ] 66.0
-[ABBV ] 74.8
-[LLY  ] 74.5
-[COST ] 64.8
-[SHEL ] 60.1
-[INTC ] 66.4
-[AZN  ] 68.9
-[MRK  ] 65.0
-[BHP  ] 63.0
-[UNP  ] 65.6
-[TXN  ] 62.6
 ```
