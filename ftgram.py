@@ -711,7 +711,7 @@ def oversold(update: Update, context: CallbackContext) -> None:
     info   = finviz_info[ 'RSI_OVERSOLD(40)' ]
     result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
     desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
-    text   = '\n'.join( desc )
+    text   = '\n'.join( desc[:10] )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def overbought(update: Update, context: CallbackContext) -> None:
@@ -719,7 +719,7 @@ def overbought(update: Update, context: CallbackContext) -> None:
     info   = finviz_info[ 'RSI_OVERBOUGHT(60)' ]
     result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
     desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
-    text   = '\n'.join( desc )
+    text   = '\n'.join( desc[:10] )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 # -------------------------------------------------------------------------------------------------
