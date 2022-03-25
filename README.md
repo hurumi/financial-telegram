@@ -36,11 +36,17 @@ Filter
 
 Information
 /price [<tickers>]: show prices
+/pre [<tickers>]: show pre-prices
+/post [<tickers>]: show post-prices
 /rsi [<tickers>]: show rsi values
 /draw [<tickers>] <months>: chart
 /index: show index stat
 /sector: show sector stat
 /fear: show fear & greed chart
+
+Screener
+/oversold: show 10 RSI<40 tickers
+/overbought: show 10 RSI>60 tickers
 ```
 
 ### Ticker Commands
@@ -152,6 +158,10 @@ Example 2 (for arguments):
 [O    ]    65.6 ( +0.7%)
 ```
 
+#### /pre [\<tickers\>]: shows latest pre-prices
+
+#### /post [\<tickers\>]: shows latest post-prices
+
 #### /rsi [\<tickers\>]: shows latest rsi
 
 Example 1 (for current ticker):
@@ -234,3 +244,59 @@ Show charts from [Fear and Greed Index in CNN Business](https://money.cnn.com/da
 
 <img src="/images/fear1.jpg" width="50%">
 <img src="/images/fear2.jpg" width="50%">
+
+#### /oversold: shows 10 RSI<40 tickers
+
+Example:
+```
+/oversold
+
+[HD   ] 37.9
+[VZ   ] 34.4
+[PM   ] 39.2
+[UL   ] 36.9
+[C    ] 40.0
+[MDLZ ] 39.0
+[TJX  ] 38.8
+[CL   ] 39.5
+[KMB  ] 34.6
+[BAX  ] 35.7
+[TSN  ] 38.8
+[PHG  ] 37.5
+[SWK  ] 30.3
+[OKTA ] 38.1
+[SUI  ] 37.7
+[RYAAY] 38.7
+[CLX  ] 38.4
+[IEP  ] 29.2
+[HNP  ] 37.8
+[DPZ  ] 40.0
+```
+
+#### /overbought: shows 10 RSI>60 tickers
+
+Example:
+```
+/overbought
+
+[AAPL ] 62.7
+[GOOG ] 60.3
+[GOOGL] 61.0
+[AMZN ] 62.1
+[TSLA ] 66.1
+[BRK-B] 73.6
+[BRK-A] 72.8
+[NVDA ] 64.1
+[UNH  ] 64.5
+[CVX  ] 66.0
+[ABBV ] 74.8
+[LLY  ] 74.5
+[COST ] 64.8
+[SHEL ] 60.1
+[INTC ] 66.4
+[AZN  ] 68.9
+[MRK  ] 65.0
+[BHP  ] 63.0
+[UNP  ] 65.6
+[TXN  ] 62.6
+```
