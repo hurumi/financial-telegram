@@ -15,7 +15,7 @@ You can refer to [How to create a telegram bot.](https://www.codementor.io/@kara
 
 ### Help Commands
 
-#### /help: shows usages
+#### /help: shows usages (= /start)
 
 ```
 Help
