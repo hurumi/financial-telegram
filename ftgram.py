@@ -93,16 +93,8 @@ headers = {
             AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 }
 finviz_info = {
-    'RSI_OVERSOLD(40)': { 
-        'url':'https://finviz.com/screener.ashx?v=171&f=ta_rsi_os40&ft=3&o=-marketcap',
-        'col': [ 'No.', 'Beta', 'ATR', 'SMA20', 'SMA50', 'SMA200', '52W High', '52W Low', 'RSI', 'Price', 
-                 'Change', 'from Open', 'Gap', 'Volume' ]
-    },
-    'RSI_OVERBOUGHT(60)': { 
-        'url':'https://finviz.com/screener.ashx?v=171&f=ta_rsi_ob60&ft=3&o=-marketcap',
-        'col': [ 'No.', 'Beta', 'ATR', 'SMA20', 'SMA50',  'SMA200', '52W High', '52W Low', 'RSI', 'Price', 
-                 'Change', 'from Open', 'Gap', 'Volume' ]
-    }    
+    'RSI_OVERSOLD(40)':   'https://finviz.com/screener.ashx?v=171&f=ta_rsi_os40&ft=3&o=-marketcap',
+    'RSI_OVERBOUGHT(60)': 'https://finviz.com/screener.ashx?v=171&f=ta_rsi_ob60&ft=3&o=-marketcap',   
 }
 
 prev_desc = []
@@ -389,21 +381,32 @@ def get_chart( _info, dmonth ):
 
     return '_tmp.png'
 
-def crawl_finviz( url, colidx, numcols ):
+def crawl_finviz_df( url ):
 
     session = requests.Session()
     website = session.get(url, headers=headers, timeout=10, verify=False)
 
     soup = BeautifulSoup(website.text, "lxml")
 
-    url_all1 = soup.find_all('a', {'class':"screener-link-primary"})
-    url_all2 = soup.find_all('a', {'class':"screener-link"})
+    url_all1 = soup.find_all('a',  {'class':"screener-link-primary"})
+    url_all2 = soup.find_all('a',  {'class':"screener-link"})
+    td_col   = soup.find_all('td', {'class':"table-top cursor-pointer"})
 
-    n = len( url_all2 )
+    col_list  = [ elem.text for elem in td_col ]
+    col_list  = col_list[1:] # remove No.
     tick_list = [ elem.text for elem in url_all1 ]
-    rsi_list  = [ url_all2[i].text for i in range( colidx, n, numcols ) ]
+    n         = len( url_all2 )
+    ncol      = len( col_list )
 
-    return dict( zip( tick_list, rsi_list ) )
+    df = pd.DataFrame()
+    df[ col_list[0] ] = tick_list
+
+    # for each column
+    for idx, col in enumerate( col_list[1:] ):
+        val_list = [ url_all2[i].text for i in range( idx+1, n, ncol ) ]
+        df[ col ] = val_list
+ 
+    return df
 
 # -------------------------------------------------------------------------------------------------
 # Callbacks
@@ -708,17 +711,19 @@ def job(update: Update, context: CallbackContext) -> None:
 
 def oversold(update: Update, context: CallbackContext) -> None:
     """Show 10 RSI<40 tickers"""
-    info   = finviz_info[ 'RSI_OVERSOLD(40)' ]
-    result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
-    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
+    url    = finviz_info[ 'RSI_OVERSOLD(40)' ]
+    result = crawl_finviz_df( url )
+    rsi_dt = dict( zip( result['Ticker'], result['RSI'] ) )
+    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in rsi_dt.items() ]
     text   = '\n'.join( desc[:10] )
     update.message.reply_text( text, parse_mode = "HTML" )
 
 def overbought(update: Update, context: CallbackContext) -> None:
     """Show 10 RSI>60 tickers"""
-    info   = finviz_info[ 'RSI_OVERBOUGHT(60)' ]
-    result = crawl_finviz( info['url'], info['col'].index('RSI'), len( info['col'] ) )
-    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in result.items() ]
+    url    = finviz_info[ 'RSI_OVERBOUGHT(60)' ]
+    result = crawl_finviz_df( url )
+    rsi_dt = dict( zip( result['Ticker'], result['RSI'] ) )
+    desc   = [ f'<code>[{key:5}] {float(val):.1f}</code>' for key, val in rsi_dt.items() ]
     text   = '\n'.join( desc[:10] )
     update.message.reply_text( text, parse_mode = "HTML" )
 
