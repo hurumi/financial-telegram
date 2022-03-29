@@ -298,6 +298,52 @@ def get_rsi( _metric ):
 
     return desc
 
+def get_info( _ticker ):
+
+    # get information
+    t = Ticker( _ticker, verify=False )
+    p = t.price[_ticker]
+
+    # quote type
+    quoteType = p['quoteType']
+
+    # prepare output
+    desc = []
+    if quoteType == 'EQUITY':
+        sd = t.summary_detail[_ticker]
+        sp = t.summary_profile[_ticker]
+        marketCap = round( p['marketCap'] / 1000000000, 2 )
+        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
+        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
+        desc.append( f'<code>Sector   : {sp["sector"]}</code>' )
+        desc.append( f'<code>Industry : {sp["industry"]}</code>' )
+        desc.append( f'<code>Marketcap: {marketCap}B</code>' )
+        try:
+            dividend  = round( sd['dividendYield'] * 100 , 2 )
+            desc.append( f'<code>Dividend : {dividend}%</code>' )
+        except:
+            pass
+    elif quoteType == 'ETF':
+        sd = t.summary_detail[_ticker]
+        f  = t.fund_holding_info[_ticker]
+        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
+        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
+        try:
+            dividend  = round( sd['yield'] * 100 , 2 )
+            desc.append( f'<code>Dividend : {dividend}%</code>' )
+        except:
+            pass
+        desc.append( f'<code>[ Top Holdings ]</code>' )
+        for elem in f['holdings']:
+            h_name = elem['holdingName']
+            h_allo = elem['holdingPercent']*100
+            desc.append( f'<code>{h_name[:15]:15} {h_allo:6.2f}%</code>' )
+    else:
+        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
+        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
+
+    return desc
+
 def get_fear_grid_info():
 
     # local functions
@@ -439,6 +485,7 @@ def help(update: Update, context: CallbackContext) -> None:
                              '/pre [<tickers>]: show pre-prices\n' +
                              '/post [<tickers>]: show post-prices\n' +
                              '/rsi [<tickers>]: show rsi values\n' +
+                             '/info ticker: show information\n' +
                              '/draw [<tickers>] <months>: chart\n' +
                              '/index: show index stat\n' +
                              '/sector: show sector stat\n' +
@@ -603,6 +650,15 @@ def rsi(update: Update, context: CallbackContext) -> None:
     desc   = get_rsi   ( metric    )
     text   = '\n'.join ( desc      )
     update.message.reply_text( text, parse_mode = "HTML" )       
+
+def info(update: Update, context: CallbackContext) -> None:
+    """Show information of single ticker"""
+    if len( context.args ) > 0:
+        desc = get_info ( context.args[0] )
+        text = '\n'.join( desc            )
+        update.message.reply_text( text, parse_mode = "HTML" )
+    else:
+        update.message.reply_text( 'Usage: /info ticker: show information' )
 
 def draw(update: Update, context: CallbackContext) -> None:
     """Draw chart"""
@@ -769,6 +825,7 @@ def main():
     dispatcher.add_handler( CommandHandler("post",       post       ) )
     dispatcher.add_handler( CommandHandler("rsi",        rsi        ) )
     dispatcher.add_handler( CommandHandler("draw",       draw       ) )
+    dispatcher.add_handler( CommandHandler("info",       info       ) )    
     dispatcher.add_handler( CommandHandler("index",      index      ) )
     dispatcher.add_handler( CommandHandler("sector",     sector     ) )
     dispatcher.add_handler( CommandHandler("fear",       fear       ) )
