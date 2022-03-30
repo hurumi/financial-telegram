@@ -309,38 +309,48 @@ def get_info( _ticker ):
 
     # prepare output
     desc = []
+
+    # basic information
+    desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
+    desc.append( f'<code>Name     : {p["shortName"]}</code>' )
+    desc.append( f'<code>Type     : {quoteType}</code>' )
+
+    # additional information
     if quoteType == 'EQUITY':
-        sd = t.summary_detail[_ticker]
+        sd = t.summary_detail [_ticker]
         sp = t.summary_profile[_ticker]
-        marketCap = round( p['marketCap'] / 1000000000, 2 )
-        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
-        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
-        desc.append( f'<code>Sector   : {sp["sector"]}</code>' )
-        desc.append( f'<code>Industry : {sp["industry"]}</code>' )
-        desc.append( f'<code>Marketcap: {marketCap}B</code>' )
-        try:
-            dividend  = round( sd['dividendYield'] * 100 , 2 )
-            desc.append( f'<code>Dividend : {dividend}%</code>' )
-        except:
-            pass
+        if 'sector' in sp: 
+            desc.append( f'<code>Sector   : {sp["sector"]}</code>' )
+        if 'industry' in sp: 
+            desc.append( f'<code>Industry : {sp["industry"]}</code>' )
+        if 'marketCap' in p: 
+            desc.append( f'<code>Marketcap: {p["marketCap"]/1000000000:.2f}B</code>' )
+        if 'trailingPE' in sd: 
+            desc.append( f'<code>P/E      : {sd["trailingPE"]:.2f}</code>' )
+        if 'forwardPE' in sd: 
+            desc.append( f'<code>Fwd P/E  : {sd["forwardPE"]:.2f}</code>' )            
+        if 'dividendYield' in sd:
+            desc.append( f'<code>Dividend : {sd["dividendYield"]*100:.2f}%</code>' )
     elif quoteType == 'ETF':
-        sd = t.summary_detail[_ticker]
+        sd = t.summary_detail   [_ticker]
         f  = t.fund_holding_info[_ticker]
-        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
-        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
-        try:
-            dividend  = round( sd['yield'] * 100 , 2 )
-            desc.append( f'<code>Dividend : {dividend}%</code>' )
-        except:
-            pass
-        desc.append( f'<code>[ Top Holdings ]</code>' )
-        for elem in f['holdings']:
-            h_name = elem['holdingName']
-            h_allo = elem['holdingPercent']*100
-            desc.append( f'<code>{h_name[:15]:15} {h_allo:6.2f}%</code>' )
-    else:
-        desc.append( f'<code>Ticker   : {_ticker.upper()}</code>' )
-        desc.append( f'<code>Name     : {p["shortName"]}</code>' )
+        pr = t.fund_profile     [_ticker]
+        if 'categoryName' in pr:
+            desc.append( f'<code>Category : {pr["categoryName"]}</code>' )
+        if 'equityHoldings' in f and 'priceToEarnings' in f['equityHoldings']:
+            desc.append( f'<code>P/E      : {f["equityHoldings"]["priceToEarnings"]:.2f}</code>' )
+        if 'yield' in sd:
+            desc.append( f'<code>Dividend : {sd["yield"]*100:.2f}%</code>' )
+        if 'holdings' in f:
+            desc.append( f'<code>[ Top Holdings ]</code>' )
+            for elem in f['holdings']:
+                desc.append( f'<code>{elem["holdingName"][:15]:15} {elem["holdingPercent"]*100:6.2f}%</code>' )
+        if 'sectorWeightings' in f:
+            desc.append( f'<code>[ Sector Weightings ]</code>' )
+            se_dict = {}
+            for elem in f['sectorWeightings']: se_dict.update( elem )
+            for sec, val in se_dict.items():
+                desc.append( f'<code>{sec[:15]:15} {val*100:6.2f}%</code>' )              
 
     return desc
 
