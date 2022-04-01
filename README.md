@@ -42,7 +42,6 @@ Information
 /draw [<tickers>] <months>: chart
 /index: show index stat
 /sector: show sector stat
-/fear: show fear & greed chart
 
 Screener
 /oversold: show 10 RSI<40 tickers
@@ -237,13 +236,6 @@ Example:
 [Techno]   141.4 ( -1.9%)
 [Energy]    74.5 ( -3.0%)
 ```
-
-#### /fear: shows fear and greed charts
-
-Show charts from [Fear and Greed Index in CNN Business](https://money.cnn.com/data/fear-and-greed/)
-
-<img src="/images/fear1.jpg" width="50%">
-<img src="/images/fear2.jpg" width="50%">
 
 #### /oversold: shows 10 RSI<40 tickers
 
