@@ -354,43 +354,6 @@ def get_info( _ticker ):
 
     return desc
 
-def get_fear_grid_info():
-
-    # local functions
-    def clean_image_url( _url ):
-        idx1 = _url.find ( "'" )
-        idx2 = _url.rfind( "'" )
-        return _url[idx1+1:idx2]
-
-    def sep_fear_index( _str ):
-        _temp1 = _str.split( ':' )
-        _temp2 = _temp1[1].split( '(' )
-        _temp  = [ _temp1[0], int(_temp2[0]), _temp2[1][:-1] ]
-        return _temp
-
-    # CNN money
-    url = 'https://money.cnn.com/data/fear-and-greed/'
-
-    # get data
-    response = requests.get( url, verify=False )
-    html     = response.text
-    soup     = BeautifulSoup( html, 'html.parser' )
-
-    # needle chart
-    needle      = soup.select_one( '#needleChart' )
-    needle_url  = clean_image_url( needle['style'] )
-    needle_list = needle.select( 'li' )
-    fear_list   = []
-    for elem in needle_list:
-        entry = sep_fear_index( elem.get_text() )
-        fear_list.append( entry )
-
-    # over time
-    overtime = soup.select_one( '#feargreedOverTime' )
-    overtime_url = clean_image_url( overtime['style'] )
-
-    return needle_url, fear_list, overtime_url
-
 def get_num_points( index, dmonth ):
 
     last = index[-1]
@@ -498,8 +461,7 @@ def help(update: Update, context: CallbackContext) -> None:
                              '/info ticker: show information\n' +
                              '/draw [<tickers>] <months>: chart\n' +
                              '/index: show index stat\n' +
-                             '/sector: show sector stat\n' +
-                             '/fear: show fear & greed chart\n' )
+                             '/sector: show sector stat\n' )
     text += '\n'                             
     
     text += '*Screener*\n'
@@ -733,18 +695,6 @@ def setthr(update: Update, context: CallbackContext) -> None:
     except:
         update.message.reply_text( 'Usage: /set <rsi | price> <low> <high>' )
 
-def fear(update: Update, context: CallbackContext) -> None:
-    """Show fear and greed chart."""
-    needle_url, fear_list, overtime_url = get_fear_grid_info()
-
-    # add timestamp to avoid cache
-    timestamp    = str( datetime.now().isoformat() )
-    overtime_url = f'{overtime_url}&a={timestamp}'
-
-    # send photos
-    update.message.reply_photo( needle_url   )
-    update.message.reply_photo( overtime_url )
-
 def index(update: Update, context: CallbackContext) -> None:
     """Show index price"""
     info   = get_source( index_tickers )
@@ -838,7 +788,6 @@ def main():
     dispatcher.add_handler( CommandHandler("info",       info       ) )    
     dispatcher.add_handler( CommandHandler("index",      index      ) )
     dispatcher.add_handler( CommandHandler("sector",     sector     ) )
-    dispatcher.add_handler( CommandHandler("fear",       fear       ) )
     dispatcher.add_handler( CommandHandler("job",        job        ) )
     dispatcher.add_handler( CommandHandler("oversold",   oversold   ) )
     dispatcher.add_handler( CommandHandler("overbought", overbought ) )
